@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as fs from "fs";
 import { ExtToWebviewMessage, WebviewToExtMessage } from "../types";
 
 const LOG = "[FlowFixer:DashboardPanel]";
@@ -40,53 +41,30 @@ export class DashboardPanelProvider implements vscode.WebviewViewProvider {
   }
 
   private getHtml(webview: vscode.Webview): string {
+    const htmlPath = vscode.Uri.joinPath(this.extensionUri, "src", "webview", "dashboard.html");
+    const stylesUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "src", "webview", "styles.css"));
+    const configUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "src", "webview", "config.js"));
     const nonce = getNonce();
-    const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, "src", "webview", "styles.css")
-    );
-    const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, "dist", "webview", "dashboardScript.js")
-    );
 
-    return /* html */ `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
-  <link rel="stylesheet" href="${styleUri}">
-  <title>Bug Dashboard</title>
-</head>
-<body>
-  <div id="root">
-    <p id="status-live" class="sr-only" aria-live="polite"></p>
-    <div id="empty-state" class="empty-state">
-      <p>No bug history yet.</p>
-      <p class="muted">Your bug patterns will appear here as Visual Debugger tracks errors.</p>
-    </div>
-    <div id="dashboard-content" style="display:none;">
-      <section>
-        <h3>Bug Categories</h3>
-        <div class="chart-container"><canvas id="category-chart" aria-label="Bug category bar chart"></canvas></div>
-      </section>
-      <section>
-        <h3>Focus Area</h3>
-        <p id="focus-area"></p>
-      </section>
-      <section>
-        <h3>Trend Over Sessions (Last 7 Days)</h3>
-        <div class="chart-container"><canvas id="trend-chart" aria-label="7 day bug trend"></canvas></div>
-      </section>
-      <section>
-        <h3>Recent Bugs</h3>
-        <div id="recent-bugs"></div>
-      </section>
-    </div>
-  </div>
-  <script nonce="${nonce}" src="${scriptUri}"></script>
-</body>
-</html>`;
+    let html = "";
+    try {
+        html = fs.readFileSync(htmlPath.fsPath, "utf8");
+    } catch (e) {
+        console.error(`${LOG} Failed to read dashboard.html`, e);
+        return `<div>Error loading resource: ${e}</div>`;
+    }
+
+    // Replace resource paths
+    html = html.replace('href="styles.css"', `href="${stylesUri}"`);
+    
+    // Add nonce to all script tags
+    html = html.replace(/<script/g, `<script nonce="${nonce}"`);
+
+    // Inject CSP
+    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src https://api.elevenlabs.io blob:; media-src blob:;">`;
+    html = html.replace('<head>', `<head>${csp}`);
+
+    return html;
   }
 }
 

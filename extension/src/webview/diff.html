@@ -7,50 +7,58 @@
     <title>AI Fix Review — Visual Debugger</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="config.js"></script>
-    <!-- diff2html CSS (CDN for browser preview; will be bundled by esbuild later) -->
+    <!-- diff2html CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html@3.4.48/bundles/css/diff2html.min.css" />
     <style>
         /* diff2html theme overrides for VS Code compatibility */
         .d2h-wrapper {
             background: transparent !important;
-            border-radius: 6px;
-            overflow: hidden;
         }
 
         .d2h-file-header {
-            background: var(--vscode-editorGroupHeader-tabsBackground, #252526) !important;
+            background: var(--vscode-editor-background) !important;
             color: var(--vscode-foreground) !important;
-            border-bottom: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.2)) !important;
+            border-bottom: 1px solid var(--vscode-widget-border) !important;
         }
 
         .d2h-file-wrapper {
-            border: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.2)) !important;
-            border-radius: 6px;
-            margin-bottom: 12px;
+            border: 1px solid var(--vscode-widget-border) !important;
+            border-radius: 4px;
+            margin-bottom: 16px;
         }
 
         .d2h-code-linenumber,
+        .d2h-code-side-linenumber,
         .d2h-code-line-ctn {
             font-family: var(--vscode-editor-font-family, 'Consolas', monospace) !important;
             font-size: var(--vscode-editor-font-size, 13px) !important;
+            background: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+        }
+
+        /* Border fix for side-by-side view */
+        .d2h-code-side-line {
+            border-right: 1px solid var(--vscode-widget-border) !important;
         }
 
         /* Green for additions */
         .d2h-ins {
-            background: rgba(76, 175, 80, 0.15) !important;
+            background-color: var(--vscode-diffEditor-insertedTextBackground, rgba(155, 185, 85, 0.2)) !important;
+            color: var(--vscode-editor-foreground) !important;
         }
 
         .d2h-ins .d2h-code-line-ctn {
-            background: rgba(76, 175, 80, 0.08) !important;
+            background-color: transparent !important;
         }
 
         /* Red for deletions */
         .d2h-del {
-            background: rgba(255, 85, 85, 0.15) !important;
+            background-color: var(--vscode-diffEditor-removedTextBackground, rgba(255, 0, 0, 0.2)) !important;
+            color: var(--vscode-editor-foreground) !important;
         }
 
         .d2h-del .d2h-code-line-ctn {
-            background: rgba(255, 85, 85, 0.08) !important;
+            background-color: transparent !important;
         }
     </style>
 </head>
@@ -62,20 +70,20 @@
             <h1>📝 AI Fix Review</h1>
         </div>
 
-        <!-- Empty state — shown before any diff is detected -->
-        <div id="empty-state" class="card" style="text-align: center; padding: 32px 16px; opacity: 0.7;">
+        <!-- Empty state -->
+        <div id="empty-state" class="card" style="text-align: center; padding: 32px 16px;">
             <p style="font-size: 1.1em; margin-bottom: 8px;">No AI fixes to review yet.</p>
             <p class="text-muted text-sm">After an error is detected, use an AI tool (Copilot, Cursor, etc.) to fix it. Visual Debugger will explain the changes.</p>
         </div>
 
-        <!-- Diff content — hidden until a diff is received -->
+        <!-- Diff content -->
         <div id="diff-content" style="display: none;">
 
         <!-- Diff Render Container -->
-        <div class="card slide-in" id="diff-container">
-            <div class="card-header">
+        <div class="card slide-in" id="diff-container" style="padding: 0; overflow: hidden; border: none; box-shadow: none;">
+            <div class="card-header" style="margin: 0; padding: 10px; border-bottom: none; background: var(--vscode-editor-background);">
                 <span class="badge" id="diff-category-badge"></span>
-                <span class="text-muted text-sm" id="diff-file"></span>
+                <span class="text-muted text-sm" id="diff-file" style="margin-left: 8px;"></span>
             </div>
             <div id="diff-output">
                 <!-- diff2html renders here -->
@@ -89,12 +97,12 @@
                 <div class="section-content" id="what-changed"></div>
             </div>
 
-            <div class="section mt-12">
+            <div class="section" style="margin-top: 16px;">
                 <div class="section-title"><span class="icon">🎯</span> Why This Fixes It</div>
                 <div class="section-content" id="why-fixes"></div>
             </div>
 
-            <div class="section mt-12">
+            <div class="section" style="margin-top: 16px;">
                 <div class="section-title"><span class="icon">💡</span> Key Takeaway</div>
                 <div class="section-content" id="key-takeaway" style="font-weight: 500; font-style: italic;"></div>
             </div>
@@ -103,14 +111,10 @@
         </div><!-- close #diff-content -->
 
         <!-- TTS Controls -->
-        <div class="mt-12" id="tts-controls" style="display: none; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <div
-                style="display: flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--vscode-input-border, rgba(127,127,127,0.25));">
-                <button class="btn voice-toggle active" id="voice-female"
-                    style="border-radius: 0; border: none; padding: 6px 12px; font-size: 0.88em;">👩 Female</button>
-                <button class="btn voice-toggle" id="voice-male"
-                    style="border-radius: 0; border: none; border-left: 1px solid var(--vscode-input-border, rgba(127,127,127,0.25)); padding: 6px 12px; font-size: 0.88em;">👨
-                    Male</button>
+        <div class="mt-12" id="tts-controls" style="display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 20px;">
+            <div class="voice-toggle-group">
+                <button class="voice-toggle active" id="voice-female">👩 Female</button>
+                <button class="voice-toggle" id="voice-male">👨 Male</button>
             </div>
             <button class="btn btn--secondary" id="tts-btn">🔊 Read Aloud</button>
         </div>
@@ -131,9 +135,8 @@
             console.log("Browser preview mode (no VS Code API)");
         }
 
-        // Listen for messages from extension
         window.addEventListener('message', (event) => {
-            const { type, data } = event.data; // Extension sends { type: 'showDiff', data: {...} }
+            const { type, data } = event.data;
             if (type === 'showDiff') {
                 updatePanel(data);
             }
@@ -143,7 +146,6 @@
         function updatePanel(data) {
             currentDiffData = data;
 
-            // Diff data may be at top level (mock) or nested under data.diff (real)
             const diffStr = data.unifiedDiff || (data.diff && data.diff.unifiedDiff) || '';
             const fileName = data.fileName || (data.diff && data.diff.file) || '';
             const category = data.category || '';
@@ -152,15 +154,25 @@
             renderDiff(diffStr);
 
             // Render Text Content
+            const badge = document.getElementById('diff-category-badge');
             if (category) {
-                document.getElementById('diff-category-badge').textContent = category;
+                badge.textContent = category;
+                badge.style.display = 'inline-block';
+                // Manual badge coloring logic if needed, or rely on styles.css default
+                const type = category.split(' ')[0];
+                if(type === 'Syntax') { badge.style.color = 'var(--ff-syntax)'; badge.style.borderColor = 'var(--ff-syntax)'; }
+                else if(type === 'Logic') { badge.style.color = 'var(--ff-logic)'; badge.style.borderColor = 'var(--ff-logic)'; }
+                else if(type === 'Runtime') { badge.style.color = 'var(--ff-runtime)'; badge.style.borderColor = 'var(--ff-runtime)'; }
+            } else {
+                badge.style.display = 'none';
             }
+            
             document.getElementById('diff-file').textContent = fileName;
             document.getElementById('what-changed').innerHTML = data.whatChanged || '';
             document.getElementById('why-fixes').innerHTML = data.whyItFixes || '';
             document.getElementById('key-takeaway').innerHTML = data.keyTakeaway || '';
 
-            // Show content, hide empty state
+            // Show content
             document.getElementById('empty-state').style.display = 'none';
             document.getElementById('diff-content').style.display = 'block';
             document.getElementById('tts-controls').style.display = 'flex';
@@ -177,7 +189,7 @@
                     renderNothingWhenEmpty: false
                 });
             } else {
-                // Fallback: show raw diff in a pre tag
+                // Fallback
                 diffOutput.innerHTML = '<pre style="padding: 12px; overflow-x: auto;"><code>' +
                     diffString.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code></pre>';
             }
@@ -208,20 +220,17 @@
      ))}</ul>
    );`,
             whatChanged: "The AI added a null check on line 15 before calling .map() and initialized the data state with an empty array [] instead of leaving it as undefined.",
-            whyItFixes: "The original code assumed 'data' was always an array, but before the API response arrives, 'data' is undefined. By initializing it as [], .map() now has a valid (empty) array to iterate over. The optional chaining (data?.map()) adds an extra safety net.",
-            keyTakeaway: "Always initialize state with a default value that matches the expected type — arrays as [], objects as {}, strings as ''."
+            whyItFixes: "The original code assumed 'data' was always an array, but before the API response arrives, 'data' is undefined. By initializing it as [], .map() now has a valid (empty) array to iterate over.",
+            keyTakeaway: "Always initialize state with a default value that matches the expected type."
         };
 
-        // If in browser (no vscode), load mock data immediately for preview
         if (!vscode) {
             updatePanel(MOCK_DIFF_DATA);
         } else {
-            // Signal that the webview is ready to receive messages
             vscode.postMessage({ type: 'ready' });
         }
 
-        // ── ElevenLabs TTS — Fine-Tuned Natural Voice ──
-        // Premium voices: Sarah (soft, natural female), Chris (casual, conversational male)
+        // ── ElevenLabs TTS ──
         const VOICES = {
             female: { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah' },
             male: { id: 'iP95p4xoKVk53GoZ742B', name: 'Chris' }
@@ -231,35 +240,12 @@
         const voiceFemaleBtn = document.getElementById('voice-female');
         const voiceMaleBtn = document.getElementById('voice-male');
 
-        voiceFemaleBtn.addEventListener('click', () => {
-            selectedVoice = 'female';
-            voiceFemaleBtn.classList.add('active');
-            voiceMaleBtn.classList.remove('active');
-        });
-        voiceMaleBtn.addEventListener('click', () => {
-            selectedVoice = 'male';
-            voiceMaleBtn.classList.add('active');
-            voiceFemaleBtn.classList.remove('active');
-        });
+        voiceFemaleBtn.addEventListener('click', () => { selectedVoice = 'female'; voiceFemaleBtn.classList.add('active'); voiceMaleBtn.classList.remove('active'); });
+        voiceMaleBtn.addEventListener('click', () => { selectedVoice = 'male'; voiceMaleBtn.classList.add('active'); voiceFemaleBtn.classList.remove('active'); });
 
-        // Strip HTML tags and clean text for natural TTS reading
         function cleanTextForTTS(html) {
             if (!html) return '';
-            return html
-                .replace(/<code>/g, '')
-                .replace(/<\/code>/g, '')
-                .replace(/<strong>/g, '')
-                .replace(/<\/strong>/g, '')
-                .replace(/<em>/g, '')
-                .replace(/<\/em>/g, '')
-                .replace(/<[^>]*>/g, '')
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'")
-                .replace(/\s+/g, ' ')
-                .trim();
+            return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
         }
 
         const ttsBtn = document.getElementById('tts-btn');
@@ -270,19 +256,15 @@
             if (isSpeaking && ttsAudio) {
                 ttsAudio.pause(); ttsAudio = null; isSpeaking = false;
                 ttsBtn.textContent = '🔊 Read Aloud';
-                ttsBtn.classList.remove('btn--tts-playing');
                 return;
             }
             
             const data = currentDiffData || MOCK_DIFF_DATA;
-            const textToRead = cleanTextForTTS(
-                data.whatChanged + '. ' + data.whyItFixes + '. Key takeaway: ' + data.keyTakeaway
-            );
+            const textToRead = cleanTextForTTS(data.whatChanged + '. ' + data.whyItFixes + '. Key takeaway: ' + data.keyTakeaway);
             
-            const apiKey = (typeof ELEVENLABS_API_KEY !== 'undefined' && ELEVENLABS_API_KEY !== 'your_api_key_here')
-                ? ELEVENLABS_API_KEY : null;
+            const apiKey = (typeof ELEVENLABS_API_KEY !== 'undefined' && ELEVENLABS_API_KEY !== 'your_api_key_here') ? ELEVENLABS_API_KEY : null;
             ttsBtn.textContent = '⏳ Loading...';
-            ttsBtn.classList.add('btn--tts-loading');
+            
             if (apiKey) {
                 try {
                     const voice = VOICES[selectedVoice];
@@ -292,55 +274,26 @@
                         body: JSON.stringify({
                             text: textToRead,
                             model_id: 'eleven_turbo_v2_5',
-                            voice_settings: {
-                                stability: 0.50,
-                                similarity_boost: 0.65,
-                                style: 0.10,
-                                use_speaker_boost: true
-                            }
+                            voice_settings: { stability: 0.50, similarity_boost: 0.65, style: 0.10, use_speaker_boost: true }
                         })
                     });
-                    if (!res.ok) {
-                        const errorBody = await res.text().catch(() => '');
-                        throw new Error(`API ${res.status}: ${errorBody.slice(0, 100)}`);
-                    }
+                    if (!res.ok) throw new Error('API Error');
                     const blob = await res.blob();
                     const url = URL.createObjectURL(blob);
                     ttsAudio = new Audio(url);
                     isSpeaking = true;
                     ttsBtn.textContent = '⏹️ Stop';
-                    ttsBtn.classList.remove('btn--tts-loading');
-                    ttsBtn.classList.add('btn--tts-playing');
-                    ttsAudio.onended = () => {
-                        isSpeaking = false;
-                        ttsBtn.textContent = '🔊 Read Aloud';
-                        ttsBtn.classList.remove('btn--tts-playing');
-                        URL.revokeObjectURL(url);
-                    };
-                    ttsAudio.onerror = () => {
-                        isSpeaking = false;
-                        ttsBtn.textContent = '❌ Audio Error';
-                        ttsBtn.classList.remove('btn--tts-playing');
-                        setTimeout(() => { ttsBtn.textContent = '🔊 Read Aloud'; }, 3000);
-                    };
+                    ttsAudio.onended = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; URL.revokeObjectURL(url); };
                     ttsAudio.play();
                     return;
-                } catch (e) {
-                    console.warn('ElevenLabs TTS error:', e);
-                    ttsBtn.textContent = '❌ ' + (e.message || 'TTS Failed');
-                    ttsBtn.classList.remove('btn--tts-loading');
-                    setTimeout(() => { ttsBtn.textContent = '🔊 Read Aloud'; }, 3000);
-                }
+                } catch (e) { console.warn(e); }
             }
-            ttsBtn.classList.remove('btn--tts-loading');
+            
             if ('speechSynthesis' in window) {
                 const u = new SpeechSynthesisUtterance(textToRead);
-                u.rate = 0.95;
-                u.pitch = 1.0;
                 isSpeaking = true;
                 ttsBtn.textContent = '⏹️ Stop';
-                ttsBtn.classList.add('btn--tts-playing');
-                u.onend = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; ttsBtn.classList.remove('btn--tts-playing'); };
+                u.onend = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; };
                 speechSynthesis.speak(u);
             } else {
                 ttsBtn.textContent = '❌ TTS Unavailable';
@@ -349,5 +302,4 @@
         });
     </script>
 </body>
-
 </html>

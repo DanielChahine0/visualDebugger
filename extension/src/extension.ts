@@ -10,6 +10,7 @@ import { CapturedError, BugRecord, WebviewToExtMessage } from "./types";
 
 import { getSeedBugRecords } from "./seedData";
 import { loadEnv } from "./envLoader";
+import { fetchTtsAudio } from "./ttsClient";
 
 const LOG = "[FlowFixer]";
 const TTS_MIME_TYPE = "audio/mpeg";
