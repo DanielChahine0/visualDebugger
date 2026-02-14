@@ -582,3 +582,311 @@ video {
         padding: 12px;
     }
 }
+
+/* ================================================================
+   Diff Panel v2 — Accessibility-First Explanation UI
+   Designed for learners with ADHD and learning disabilities.
+   Color-blind safe, keyboard navigable, reduced-motion aware.
+   ================================================================ */
+
+/* ── Accessibility: Reduced Motion ────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ── Accessibility: Focus Visible ─────────────────────────── */
+*:focus-visible {
+    outline: 2px solid var(--vscode-focusBorder, #007acc);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* ── Screen reader only ───────────────────────────────────── */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+/* ── Layout ─────────────────────────────────────────────── */
+.ff-panel {
+    max-width: 580px;
+    margin: 0 auto;
+    padding: 8px 4px;
+}
+
+/* ── Empty State ────────────────────────────────────────── */
+.ff-empty {
+    text-align: center;
+    padding: 48px 20px;
+}
+
+.ff-empty-icon {
+    font-size: 2.8em;
+    margin-bottom: 16px;
+    line-height: 1;
+}
+
+.ff-empty-heading {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: var(--vscode-foreground);
+    margin-bottom: 10px;
+}
+
+.ff-empty-body {
+    font-size: 0.95em;
+    line-height: 1.7;
+    color: var(--vscode-descriptionForeground);
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+/* ── File Context Bar ───────────────────────────────────── */
+.ff-file-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    background: var(--vscode-textCodeBlock-background, rgba(127, 127, 127, 0.1));
+    border: 1px solid var(--vscode-widget-border);
+}
+
+.ff-file-name {
+    font-family: var(--vscode-editor-font-family, 'Consolas', monospace);
+    font-size: 0.85em;
+    color: var(--vscode-descriptionForeground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Section Base ───────────────────────────────────────── */
+.ff-section {
+    margin-bottom: 22px;
+    padding: 16px;
+    padding-left: 18px;
+    border-left: 3px solid transparent;
+    border-radius: 0 4px 4px 0;
+    background: var(--vscode-editor-background);
+    border-top: 1px solid var(--vscode-widget-border);
+    border-right: 1px solid var(--vscode-widget-border);
+    border-bottom: 1px solid var(--vscode-widget-border);
+    transition: border-color var(--ff-transition), box-shadow var(--ff-transition);
+}
+
+.ff-section:focus-within {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Staggered entrance */
+.ff-section {
+    animation: ffSlideIn 0.15s ease-out backwards;
+}
+
+.ff-section:nth-child(2) { animation-delay: 0.03s; }
+.ff-section:nth-child(3) { animation-delay: 0.06s; }
+.ff-section:nth-child(4) { animation-delay: 0.09s; }
+.ff-section:nth-child(5) { animation-delay: 0.12s; }
+.ff-section:nth-child(6) { animation-delay: 0.15s; }
+
+@keyframes ffSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Section Accent Colors (color-blind safe) ───────────── */
+.ff-section--summary { border-left-color: #3b82f6; }
+.ff-section--why { border-left-color: #0d9488; }
+.ff-section--todo { border-left-color: var(--vscode-foreground, #ccc); border-left-style: dashed; }
+.ff-section--takeaway { border-left-color: #d97706; }
+.ff-section--question { border-left-color: #7c3aed; }
+
+/* ── Headings ───────────────────────────────────────────── */
+.ff-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1em;
+    font-weight: 700;
+    color: var(--vscode-foreground);
+    margin-bottom: 10px;
+    letter-spacing: 0.2px;
+}
+
+.ff-icon {
+    font-size: 1.15em;
+    flex-shrink: 0;
+}
+
+/* ── Body Text ──────────────────────────────────────────── */
+.ff-body {
+    font-size: 0.95em;
+    line-height: 1.75;
+    color: var(--vscode-foreground);
+}
+
+/* ── Checklist ──────────────────────────────────────────── */
+.ff-checklist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ff-check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 6px;
+    border-radius: 4px;
+    transition: background var(--ff-transition);
+    min-height: 40px;
+}
+
+.ff-check-item:hover {
+    background: var(--vscode-list-hoverBackground);
+}
+
+.ff-checkbox {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: #3b82f6;
+}
+
+.ff-check-label {
+    font-size: 0.93em;
+    line-height: 1.6;
+    color: var(--vscode-foreground);
+    cursor: pointer;
+    transition: opacity var(--ff-transition);
+}
+
+.ff-checkbox:checked+.ff-check-label {
+    text-decoration: line-through;
+    opacity: 0.55;
+}
+
+.ff-check-done {
+    font-size: 0.88em;
+    font-weight: 600;
+    color: #3b82f6;
+    padding: 6px 0 0;
+}
+
+/* ── Callout (Key Takeaway) ─────────────────────────────── */
+.ff-callout {
+    font-size: 1em;
+    font-style: italic;
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--vscode-foreground);
+    padding: 12px 14px;
+    border-radius: 4px;
+    background: rgba(217, 119, 6, 0.08);
+    border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+/* ── Question ───────────────────────────────────────────── */
+.ff-question {
+    font-size: 1em;
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--vscode-foreground);
+}
+
+/* ── TTS Controls ───────────────────────────────────────── */
+.ff-tts-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid var(--vscode-widget-border);
+}
+
+.ff-voice-group {
+    display: inline-flex;
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.ff-voice-btn {
+    padding: 5px 12px;
+    font-size: 0.85em;
+    font-family: inherit;
+    border: none;
+    background: transparent;
+    color: var(--vscode-foreground);
+    cursor: pointer;
+    transition: background var(--ff-transition);
+    min-height: 32px;
+}
+
+.ff-voice-btn:not(:first-child) {
+    border-left: 1px solid var(--vscode-widget-border);
+}
+
+.ff-voice-btn:hover {
+    background: var(--vscode-list-hoverBackground);
+}
+
+.ff-voice-btn.active {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
+
+.ff-btn--tts {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    background: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    transition: background var(--ff-transition);
+    min-height: 32px;
+}
+
+.ff-btn--tts:hover {
+    background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.ff-btn--playing {
+    animation: ffTtsGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes ffTtsGlow {
+    0%, 100% { box-shadow: 0 0 4px rgba(0, 120, 212, 0.3); }
+    50% { box-shadow: 0 0 12px rgba(0, 120, 212, 0.6); }
+}
+
+/* ── Responsive: Narrow widths ──────────────────────────── */
+@media (max-width: 360px) {
+    .ff-panel { padding: 4px 0; }
+    .ff-section { padding: 12px; padding-left: 14px; margin-bottom: 16px; }
+    .ff-tts-bar { flex-direction: column; align-items: stretch; }
+}

@@ -475,35 +475,3 @@ export function deactivate(): void {
   console.log(`${LOG} deactivated`);
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-async function fetchTtsAudio(text: string, apiKey: string): Promise<string> {
-  const voiceId = "EXAVITQu4vr4xnSDxMaL"; // Sarah (default female)
-  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "xi-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      text,
-      model_id: "eleven_turbo_v2_5",
-      voice_settings: {
-        stability: 0.50,
-        similarity_boost: 0.65,
-        style: 0.10,
-        use_speaker_boost: true,
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`ElevenLabs API ${res.status}: ${body.slice(0, 100)}`);
-  }
-
-  const buffer = await res.arrayBuffer();
-  return Buffer.from(buffer).toString("base64");
-}
