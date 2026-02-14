@@ -42,10 +42,22 @@ export class DiffEngine implements vscode.Disposable {
     console.log(`${LOG} initialized`);
   }
 
-  /** Start tracking changes to a specific file after an error is detected */
+  /** Start tracking changes to a specific file after an error is detected.
+   *  Captures a snapshot of the file NOW so we have the true "before" state,
+   *  even if an AI tool edits the document before the next save. */
   startTracking(fileUri: string): void {
     this.tracking = true;
     this.trackedUri = fileUri;
+
+    // Snapshot current content immediately
+    const doc = vscode.workspace.textDocuments.find(
+      (d) => d.uri.fsPath === fileUri
+    );
+    if (doc) {
+      this.beforeSaveContent.set(doc.uri.toString(), doc.getText());
+      console.log(`${LOG} captured initial snapshot for ${doc.fileName}`);
+    }
+
     console.log(`${LOG} now tracking changes to: ${fileUri}`);
   }
 
@@ -59,12 +71,15 @@ export class DiffEngine implements vscode.Disposable {
 
   private captureBeforeSave(doc: vscode.TextDocument): void {
     const key = doc.uri.toString();
-    // Only capture for the tracked file or any file if no specific file tracked
+    // Only capture for the tracked file
     if (this.trackedUri && doc.uri.fsPath !== this.trackedUri) {
       return;
     }
-    this.beforeSaveContent.set(key, doc.getText());
-    console.log(`${LOG} captured before-save state for ${doc.fileName}`);
+    // Don't overwrite the initial snapshot — it has the true "before" content
+    if (!this.beforeSaveContent.has(key)) {
+      this.beforeSaveContent.set(key, doc.getText());
+      console.log(`${LOG} captured before-save state for ${doc.fileName}`);
+    }
   }
 
   private computeDiff(doc: vscode.TextDocument): void {
