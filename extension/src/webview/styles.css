@@ -416,3 +416,36 @@ code {
         transform: translateY(0);
     }
 }
+
+/* ── Generic Toggles ───────────────────────────────────────── */
+.toggle-group {
+    display: inline-flex;
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.btn-toggle {
+    background: transparent;
+    color: var(--vscode-foreground);
+    border: none;
+    border-right: 1px solid var(--vscode-widget-border);
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 0.85em;
+    font-family: inherit;
+    transition: background-color var(--ff-transition);
+}
+
+.btn-toggle:last-child {
+    border-right: none;
+}
+
+.btn-toggle:hover {
+    background-color: var(--vscode-list-hoverBackground);
+}
+
+.btn-toggle.active {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}

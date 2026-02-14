@@ -51,7 +51,15 @@
 
             <!-- Trend Over Time (Line Chart) -->
             <div class="card slide-in">
-                <h3>Bug Trend (Last 7 Days)</h3>
+                <div class="card-header" style="margin-bottom: 4px; border-bottom: none; padding-bottom: 0;">
+                     <h3 style="margin:0;">Bug Trend <span id="trend-label" class="text-muted text-sm" style="font-weight:normal">(Last 7 Days)</span></h3>
+                     <div class="toggle-group">
+                        <button class="btn-toggle" data-range="1h">1H</button>
+                        <button class="btn-toggle" data-range="24h">1D</button>
+                        <button class="btn-toggle active" data-range="7d">7D</button>
+                        <button class="btn-toggle" data-range="30d">30D</button>
+                     </div>
+                </div>
                 <div class="chart-container">
                     <canvas id="trend-chart"></canvas>
                 </div>
@@ -81,26 +89,34 @@
         const colRuntime = style.getPropertyValue('--ff-runtime').trim() || '#f14c4c';
         const colGrid = 'rgba(127, 127, 127, 0.1)';
         const colText = style.getPropertyValue('--vscode-descriptionForeground').trim() || '#888';
+        const colTotal = style.getPropertyValue('--vscode-charts-blue').trim() || '#3794ff';
 
+        // Dynamic Time Generation (Relative to Now)
+        const now = new Date();
+        const min = 60 * 1000;
+        const hour = 60 * min;
+        const day = 24 * hour;
+
+        // Mock Data with Current Timestamps
         const SEED_BUGS = [
-            { id: 1, category: "Runtime", error: "TypeError: Cannot read properties of undefined (reading 'map')", file: "App.tsx", line: 15, timestamp: "2026-02-07T09:15:00Z" },
-            { id: 2, category: "Syntax", error: "SyntaxError: Unexpected token '}'", file: "Header.tsx", line: 23, timestamp: "2026-02-07T10:30:00Z" },
-            { id: 3, category: "Logic", error: "Off-by-one: renders extra undefined item in list", file: "List.tsx", line: 8, timestamp: "2026-02-07T14:45:00Z" },
-            { id: 4, category: "Runtime", error: "ReferenceError: data is not defined", file: "Dashboard.tsx", line: 42, timestamp: "2026-02-08T08:20:00Z" },
-            { id: 5, category: "Syntax", error: "SyntaxError: Unexpected token, expected ','", file: "Form.tsx", line: 31, timestamp: "2026-02-08T11:10:00Z" },
-            { id: 6, category: "Runtime", error: "TypeError: setItems is not a function", file: "App.tsx", line: 20, timestamp: "2026-02-08T15:00:00Z" },
-            { id: 7, category: "Logic", error: "Counter increments by 2 instead of 1", file: "Counter.tsx", line: 12, timestamp: "2026-02-09T09:30:00Z" },
-            { id: 8, category: "Runtime", error: "TypeError: Cannot destructure property 'name' of undefined", file: "Profile.tsx", line: 7, timestamp: "2026-02-09T13:15:00Z" },
-            { id: 9, category: "Syntax", error: "SyntaxError: Missing semicolon", file: "utils.ts", line: 45, timestamp: "2026-02-09T16:40:00Z" },
-            { id: 10, category: "Runtime", error: "TypeError: fetch is not a function", file: "api.ts", line: 3, timestamp: "2026-02-10T10:00:00Z" },
-            { id: 11, category: "Logic", error: "Form submits even when validation fails", file: "Form.tsx", line: 55, timestamp: "2026-02-10T11:25:00Z" },
-            { id: 12, category: "Runtime", error: "RangeError: Maximum call stack size exceeded", file: "Tree.tsx", line: 18, timestamp: "2026-02-10T14:50:00Z" },
-            { id: 13, category: "Logic", error: "Search filter returns wrong results", file: "Search.tsx", line: 22, timestamp: "2026-02-11T09:10:00Z" },
-            { id: 14, category: "Runtime", error: "TypeError: Cannot read properties of null (reading 'value')", file: "Input.tsx", line: 9, timestamp: "2026-02-11T12:30:00Z" },
-            { id: 15, category: "Syntax", error: "SyntaxError: Unterminated string literal", file: "config.ts", line: 15, timestamp: "2026-02-12T08:45:00Z" },
-            { id: 16, category: "Runtime", error: "TypeError: Cannot read properties of undefined (reading 'length')", file: "Table.tsx", line: 30, timestamp: "2026-02-12T13:20:00Z" },
-            { id: 17, category: "Logic", error: "Pagination shows page 0 instead of page 1", file: "Pagination.tsx", line: 14, timestamp: "2026-02-13T10:00:00Z" },
-            { id: 18, category: "Runtime", error: "TypeError: items.filter is not a function", file: "Filter.tsx", line: 27, timestamp: "2026-02-13T15:30:00Z" }
+            { id: 1, category: "Runtime", error: "TypeError: Cannot read properties of undefined (reading 'map')", file: "App.tsx", line: 15, timestamp: new Date(now - 15 * min).toISOString() },
+            { id: 2, category: "Syntax", error: "SyntaxError: Unexpected token '}'", file: "Header.tsx", line: 23, timestamp: new Date(now - 45 * min).toISOString() },
+            { id: 3, category: "Logic", error: "Off-by-one: renders extra undefined item in list", file: "List.tsx", line: 8, timestamp: new Date(now - 2 * hour).toISOString() },
+            { id: 4, category: "Runtime", error: "ReferenceError: data is not defined", file: "Dashboard.tsx", line: 42, timestamp: new Date(now - 5 * hour).toISOString() },
+            { id: 5, category: "Syntax", error: "SyntaxError: Unexpected token, expected ','", file: "Form.tsx", line: 31, timestamp: new Date(now - 12 * hour).toISOString() },
+            { id: 6, category: "Runtime", error: "TypeError: setItems is not a function", file: "App.tsx", line: 20, timestamp: new Date(now - 1.5 * day).toISOString() },
+            { id: 7, category: "Logic", error: "Counter increments by 2 instead of 1", file: "Counter.tsx", line: 12, timestamp: new Date(now - 2 * day).toISOString() },
+            { id: 8, category: "Runtime", error: "TypeError: Cannot destructure property 'name' of undefined", file: "Profile.tsx", line: 7, timestamp: new Date(now - 3 * day).toISOString() },
+            { id: 9, category: "Syntax", error: "SyntaxError: Missing semicolon", file: "utils.ts", line: 45, timestamp: new Date(now - 4 * day).toISOString() },
+            { id: 10, category: "Runtime", error: "TypeError: fetch is not a function", file: "api.ts", line: 3, timestamp: new Date(now - 5 * day).toISOString() },
+            { id: 11, category: "Logic", error: "Form submits even when validation fails", file: "Form.tsx", line: 55, timestamp: new Date(now - 6 * day).toISOString() },
+            { id: 12, category: "Runtime", error: "RangeError: Maximum call stack size exceeded", file: "Tree.tsx", line: 18, timestamp: new Date(now - 8 * day).toISOString() },
+            { id: 13, category: "Logic", error: "Search filter returns wrong results", file: "Search.tsx", line: 22, timestamp: new Date(now - 10 * day).toISOString() },
+            { id: 14, category: "Runtime", error: "TypeError: Cannot read properties of null (reading 'value')", file: "Input.tsx", line: 9, timestamp: new Date(now - 12 * day).toISOString() },
+            { id: 15, category: "Syntax", error: "SyntaxError: Unterminated string literal", file: "config.ts", line: 15, timestamp: new Date(now - 15 * day).toISOString() },
+            { id: 16, category: "Runtime", error: "TypeError: Cannot read properties of undefined (reading 'length')", file: "Table.tsx", line: 30, timestamp: new Date(now - 20 * day).toISOString() },
+            { id: 17, category: "Logic", error: "Pagination shows page 0 instead of page 1", file: "Pagination.tsx", line: 14, timestamp: new Date(now - 25 * day).toISOString() },
+            { id: 18, category: "Runtime", error: "TypeError: items.filter is not a function", file: "Filter.tsx", line: 27, timestamp: new Date(now - 29 * day).toISOString() }
         ];
 
         // ── Compute Stats ──
@@ -136,7 +152,7 @@
                 datasets: [{
                     label: 'Count',
                     data: [syntaxCount, logicCount, runtimeCount],
-                    backgroundColor: [colSyntax + '99', colLogic + '99', colRuntime + '99'], // 60% opacity
+                    backgroundColor: [colSyntax + '99', colLogic + '99', colRuntime + '99'],
                     borderColor: [colSyntax, colLogic, colRuntime],
                     borderWidth: 1,
                     borderRadius: 3
@@ -147,81 +163,113 @@
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1, color: colText },
-                        grid: { color: colGrid }
-                    },
-                    x: {
-                        ticks: { color: colText },
-                        grid: { display: false }
-                    }
+                    y: { beginAtZero: true, ticks: { stepSize: 1, color: colText }, grid: { color: colGrid } },
+                    x: { ticks: { color: colText }, grid: { display: false } }
                 }
             }
         });
 
-        // ── Trend Line Chart ──
-        const dayLabels = ['Feb 7', 'Feb 8', 'Feb 9', 'Feb 10', 'Feb 11', 'Feb 12', 'Feb 13'];
-        const dayBuckets = [7, 8, 9, 10, 11, 12, 13];
-        const syntaxByDay = dayBuckets.map(d => SEED_BUGS.filter(b => b.category === 'Syntax' && new Date(b.timestamp).getUTCDate() === d).length);
-        const logicByDay = dayBuckets.map(d => SEED_BUGS.filter(b => b.category === 'Logic' && new Date(b.timestamp).getUTCDate() === d).length);
-        const runtimeByDay = dayBuckets.map(d => SEED_BUGS.filter(b => b.category === 'Runtime' && new Date(b.timestamp).getUTCDate() === d).length);
+        // ── Trend Line Chart (Consolidated & Dynamic) ──
+        let trendChart;
 
-        const trendCtx = document.getElementById('trend-chart').getContext('2d');
-        new Chart(trendCtx, {
-            type: 'line',
-            data: {
-                labels: dayLabels,
-                datasets: [
-                    {
-                        label: 'Syntax',
-                        data: syntaxByDay,
-                        borderColor: colSyntax,
-                        backgroundColor: colSyntax + '1A', // 10% opacity
-                        fill: true,
-                        tension: 0.2,
-                        pointRadius: 3
-                    },
-                    {
-                        label: 'Logic',
-                        data: logicByDay,
-                        borderColor: colLogic,
-                        backgroundColor: colLogic + '1A',
-                        fill: true,
-                        tension: 0.2,
-                        pointRadius: 3
-                    },
-                    {
-                        label: 'Runtime',
-                        data: runtimeByDay,
-                        borderColor: colRuntime,
-                        backgroundColor: colRuntime + '1A',
-                        fill: true,
-                        tension: 0.2,
-                        pointRadius: 3
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: { color: colText, usePointStyle: true, pointStyle: 'circle' }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1, color: colText },
-                        grid: { color: colGrid }
-                    },
-                    x: {
-                        ticks: { color: colText },
-                        grid: { display: false }
-                    }
+        function updateTrend(range) {
+            const ctx = document.getElementById('trend-chart').getContext('2d');
+            const cutoff = new Date(); // Reset to Now
+            
+            let buckets = [];
+            let labels = [];
+
+            if (range === '1h') {
+                const startTime = now.getTime() - hour;
+                // 6 buckets of 10 mins
+                for (let i = 0; i < 6; i++) {
+                    const tStart = startTime + i * 10 * min;
+                    const tEnd = tStart + 10 * min;
+                    labels.push(new Date(tEnd).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+                    buckets.push({ start: tStart, end: tEnd });
+                }
+            } else if (range === '24h') {
+                const startTime = now.getTime() - 24 * hour;
+                // 6 buckets of 4 hours
+                for (let i = 0; i < 6; i++) {
+                    const tStart = startTime + i * 4 * hour;
+                    const tEnd = tStart + 4 * hour;
+                    labels.push(new Date(tEnd).toLocaleTimeString([], {hour: '2-digit'}));
+                    buckets.push({ start: tStart, end: tEnd });
+                }
+            } else if (range === '7d') {
+                // 7 buckets of 1 day
+                for (let i = 6; i >= 0; i--) {
+                   const d = new Date(now);
+                   d.setDate(d.getDate() - i);
+                   labels.push(d.toLocaleDateString([], {month: 'short', day: 'numeric'}));
+                   const tStart = new Date(d).setHours(0,0,0,0);
+                   const tEnd = new Date(d).setHours(23,59,59,999); 
+                   buckets.push({ start: tStart, end: tEnd });
+                }
+            } else { // 30d
+                // 6 buckets of 5 days
+                const startTime = now.getTime() - 30 * day;
+                for (let i = 0; i < 6; i++) {
+                   const tStart = startTime + i * 5 * day;
+                   const tEnd = tStart + 5 * day;
+                   const d = new Date(tEnd);
+                   labels.push(d.toLocaleDateString([], {month: 'short', day: 'numeric'}));
+                   buckets.push({ start: tStart, end: tEnd });
                 }
             }
+
+            // Count Total Bugs in each bucket
+            const data = buckets.map(b => {
+                return SEED_BUGS.filter(bug => {
+                    const t = new Date(bug.timestamp).getTime();
+                    return t >= b.start && t <= b.end;
+                }).length;
+            });
+
+            if (trendChart) trendChart.destroy();
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Bugs',
+                        data: data,
+                        borderColor: colTotal,
+                        backgroundColor: colTotal + '1A',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1, color: colText }, grid: { color: colGrid } },
+                        x: { ticks: { color: colText }, grid: { display: false } }
+                    }
+                }
+            });
+
+            // Update UI
+            document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.btn-toggle[data-range="${range}"]`)?.classList.add('active');
+            
+            const labelMap = { '1h': 'Last 1 Hour', '24h': 'Last 24 Hours', '7d': 'Last 7 Days', '30d': 'Last 30 Days'};
+            const labelEl = document.getElementById('trend-label');
+            if (labelEl) labelEl.textContent = `(${labelMap[range]})`;
+        }
+
+        // Init
+        updateTrend('7d');
+
+        // Event Listeners
+        document.querySelectorAll('.btn-toggle').forEach(btn => {
+            btn.addEventListener('click', (e) => updateTrend(e.target.dataset.range));
         });
 
         // ── Bug History List ──
@@ -229,12 +277,6 @@
         const sortedBugs = [...SEED_BUGS].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
         sortedBugs.forEach(bug => {
-            const badgeClass = bug.category === 'Syntax' ? 'badge--syntax'
-                : bug.category === 'Logic' ? 'badge--logic' // Fallback to blue-ish
-                    : 'badge--runtime'; // Fallback to red-ish
-            
-            // For logic/runtime, we rely on the specific styles we added or generic badge
-            
             let colorVar = '--ff-runtime';
             if (bug.category === 'Logic') colorVar = '--ff-logic';
             if (bug.category === 'Syntax') colorVar = '--ff-syntax';
