@@ -6,7 +6,9 @@
       "WebSearch",
       "Bash(npm install:*)",
       "Bash(npx vite build)",
-      "Bash(npm run package:*)"
+      "Bash(npm run package:*)",
+      "Bash(npx vitest run)",
+      "Bash(npx vsce:*)"
     ]
   }
 }

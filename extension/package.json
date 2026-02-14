@@ -39,6 +39,10 @@
       {
         "command": "flowfixer.setMongoUri",
         "title": "FlowFixer: Set MongoDB Atlas URI"
+      },
+      {
+        "command": "flowfixer.analyzeCurrentFile",
+        "title": "FlowFixer: Analyze Current File"
       }
     ],
     "viewsContainers": {
@@ -84,7 +88,7 @@
     "@types/prismjs": "^1.26.6",
     "@types/vscode": "^1.85.0",
     "@vscode/vsce": "^3.7.1",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.27.3",
     "typescript": "^5.7.0",
     "vitest": "^3.0.0"
   },

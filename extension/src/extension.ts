@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { ErrorListener } from "./errorListener";
 import { DiffEngine } from "./diffEngine";
-import { LLMClient } from "./llmClient";
+import { initialize as initLLM, analyzeError, analyzeDiff, isInitialized, FlowFixerError } from "./llmClient";
 import { FlowFixerStorage } from "./storage";
 import { ErrorPanelProvider } from "./panels/ErrorPanel";
 import { DiffPanelProvider } from "./panels/DiffPanel";
@@ -16,8 +16,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Core services ---
   const errorListener = new ErrorListener();
   const diffEngine = new DiffEngine();
-  const llmClient = new LLMClient(context.secrets);
-  await llmClient.initialize();
+
+  // Initialize LLM (non-fatal if no key yet)
+  try {
+    await initLLM(context.secrets);
+  } catch {
+    console.warn(`${LOG} LLM not initialized — set API key with 'FlowFixer: Set Gemini API Key'`);
+  }
 
   // --- Storage ---
   const mongoUri = await context.secrets.get("flowfixer.mongoUri");
@@ -37,21 +42,29 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- Track last error for Phase 2 correlation ---
   let lastError: CapturedError | undefined;
 
-  // ===== PHASE 1: Error detected → LLM → Error Panel =====
-  errorListener.onErrorDetected(async (error) => {
+  // --- Shared Phase 1 handler (used by both auto-detection and manual trigger) ---
+  async function handlePhase1(error: CapturedError): Promise<void> {
     console.log(`${LOG} Phase 1: error detected — ${error.message}`);
     lastError = error;
 
     // Start tracking file changes for Phase 2
     diffEngine.startTracking(error.file);
 
-    // Show status bar feedback
     const statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     statusItem.text = "$(loading~spin) FlowFixer: Analyzing error...";
     statusItem.show();
 
     try {
-      const explanation = await llmClient.explainError(error);
+      if (!isInitialized()) {
+        throw new FlowFixerError("No API key set");
+      }
+
+      const explanation = await analyzeError({
+        language: error.language,
+        filename: error.file,
+        errorMessage: error.message,
+        codeContext: error.codeContext,
+      });
 
       // Send to Error Panel
       errorPanel.postMessage({
@@ -83,8 +96,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       console.error(`${LOG} Phase 1 failed:`, err);
       statusItem.text = "$(error) FlowFixer: Analysis failed";
       setTimeout(() => statusItem.dispose(), 5000);
+
+      if (err instanceof FlowFixerError) {
+        vscode.window.showWarningMessage(`FlowFixer: ${err.message}`);
+      }
     }
-  });
+  }
+
+  // ===== PHASE 1: Error detected → LLM → Error Panel =====
+  errorListener.onErrorDetected((error) => handlePhase1(error));
 
   // ===== PHASE 2: Diff detected → LLM → Diff Panel =====
   diffEngine.onDiffDetected(async (diff) => {
@@ -95,8 +115,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     statusItem.show();
 
     try {
+      if (!isInitialized()) {
+        throw new FlowFixerError("No API key set");
+      }
+
       const originalError = lastError?.message ?? "unknown error";
-      const diffExplanation = await llmClient.explainDiff(diff, originalError);
+      const diffExplanation = await analyzeDiff({
+        language: diff.language,
+        filename: diff.file,
+        originalError,
+        diff: diff.unifiedDiff,
+      });
 
       // Send to Diff Panel
       diffPanel.postMessage({
@@ -137,8 +166,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       });
       if (key) {
         await context.secrets.store("flowfixer.geminiKey", key);
-        await llmClient.initialize();
-        vscode.window.showInformationMessage("FlowFixer: Gemini API key saved.");
+        try {
+          await initLLM(context.secrets);
+          vscode.window.showInformationMessage("FlowFixer: Gemini API key saved and connected.");
+        } catch {
+          vscode.window.showWarningMessage("FlowFixer: Key saved but initialization failed. Check the key.");
+        }
       }
     }),
     vscode.commands.registerCommand("flowfixer.setMongoUri", async () => {
@@ -150,6 +183,78 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (uri) {
         await context.secrets.store("flowfixer.mongoUri", uri);
         vscode.window.showInformationMessage("FlowFixer: MongoDB URI saved. Restart extension to connect.");
+      }
+    }),
+
+    // --- Manual trigger: analyze the current file's errors or report a logic bug ---
+    vscode.commands.registerCommand("flowfixer.analyzeCurrentFile", async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showWarningMessage("FlowFixer: No active editor.");
+        return;
+      }
+
+      const doc = editor.document;
+      const diagnostics = vscode.languages.getDiagnostics(doc.uri);
+      const errors = diagnostics.filter(
+        (d) => d.severity === vscode.DiagnosticSeverity.Error
+      );
+
+      if (errors.length > 0) {
+        // Use the first error from diagnostics
+        const diag = errors[0];
+        const line = diag.range.start.line + 1;
+        const lines = doc.getText().split("\n");
+        const start = Math.max(0, line - 11);
+        const end = Math.min(lines.length, line + 10);
+        const codeContext = lines
+          .slice(start, end)
+          .map((l, i) => `${start + i + 1} | ${l}`)
+          .join("\n");
+
+        const captured: CapturedError = {
+          message: diag.message,
+          file: doc.uri.fsPath,
+          line,
+          language: doc.languageId,
+          codeContext,
+          severity: "error",
+          source: "diagnostics",
+          timestamp: Date.now(),
+        };
+
+        await handlePhase1(captured);
+      } else {
+        // No diagnostics — prompt user for error message (logic/runtime errors)
+        const errorMsg = await vscode.window.showInputBox({
+          prompt: "No compiler errors found. Describe the bug (e.g., 'renders an extra item', 'TypeError: Cannot read properties of undefined')",
+          placeHolder: "What went wrong?",
+          ignoreFocusOut: true,
+        });
+
+        if (!errorMsg) return;
+
+        const line = editor.selection.active.line + 1;
+        const lines = doc.getText().split("\n");
+        const start = Math.max(0, line - 11);
+        const end = Math.min(lines.length, line + 10);
+        const codeContext = lines
+          .slice(start, end)
+          .map((l, i) => `${start + i + 1} | ${l}`)
+          .join("\n");
+
+        const captured: CapturedError = {
+          message: errorMsg,
+          file: doc.uri.fsPath,
+          line,
+          language: doc.languageId,
+          codeContext,
+          severity: "error",
+          source: "terminal",
+          timestamp: Date.now(),
+        };
+
+        await handlePhase1(captured);
       }
     })
   );

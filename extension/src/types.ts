@@ -30,6 +30,9 @@ export interface ErrorExplanation {
   quiz?: Quiz;
 }
 
+/** Alias used by tests and external consumers */
+export type Phase1Response = Required<ErrorExplanation>;
+
 /** Captured diff between before/after save */
 export interface CapturedDiff {
   file: string;
@@ -46,6 +49,9 @@ export interface DiffExplanation {
   whyItFixes: string;
   keyTakeaway: string;
 }
+
+/** Alias used by tests and external consumers */
+export type Phase2Response = DiffExplanation;
 
 /** Request types for the LLM client */
 export interface ErrorAnalysisRequest {

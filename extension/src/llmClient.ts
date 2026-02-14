@@ -1,130 +1,150 @@
 /**
  * LLM Client — Gemini API integration.
  * Uses @google/genai SDK with structured output schemas.
+ *
+ * Exports a functional API for testability:
+ *   initialize(secrets) → analyzeError(req) / analyzeDiff(req)
  */
-import * as vscode from "vscode";
 import { GoogleGenAI, Type } from "@google/genai";
-import { CapturedError, ErrorExplanation, CapturedDiff, DiffExplanation } from "./types";
+import type { ErrorAnalysisRequest, DiffAnalysisRequest, Phase1Response, Phase2Response } from "./types";
 
 const LOG = "[FlowFixer:LLMClient]";
 const MODEL = "gemini-2.0-flash";
 
-export class LLMClient {
-  private genai: GoogleGenAI | undefined;
+// ---------------------------------------------------------------------------
+// FlowFixerError
+// ---------------------------------------------------------------------------
 
-  constructor(private readonly secrets: vscode.SecretStorage) {}
+export class FlowFixerError extends Error {
+  override readonly name = "FlowFixerError";
 
-  async initialize(): Promise<void> {
-    const apiKey = await this.secrets.get("flowfixer.geminiKey");
-    if (!apiKey) {
-      console.warn(`${LOG} no Gemini API key set. Use 'FlowFixer: Set Gemini API Key' command.`);
-      return;
+  constructor(message: string, cause?: unknown) {
+    super(message);
+    if (cause !== undefined) {
+      this.cause = cause;
     }
-    this.genai = new GoogleGenAI({ apiKey });
-  }
-
-  /** Phase 1: Explain an error for a student */
-  async explainError(error: CapturedError): Promise<ErrorExplanation> {
-    const prompt = this.buildErrorPrompt(error);
-
-    if (!this.genai) {
-      console.warn(`${LOG} no API key, returning mock explanation`);
-      return this.mockErrorExplanation(error);
-    }
-
-    try {
-      const response = await this.genai.models.generateContent({
-        model: MODEL,
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: PHASE1_SCHEMA,
-        },
-      });
-
-      const text = response.text;
-      if (!text) {
-        throw new Error("Gemini returned an empty response");
-      }
-      return JSON.parse(text) as ErrorExplanation;
-    } catch (err) {
-      console.error(`${LOG} Gemini error explanation failed:`, err);
-      return this.mockErrorExplanation(error);
-    }
-  }
-
-  /** Phase 2: Explain a diff (what the AI fix changed) */
-  async explainDiff(diff: CapturedDiff, originalError: string): Promise<DiffExplanation> {
-    const prompt = this.buildDiffPrompt(diff, originalError);
-
-    if (!this.genai) {
-      console.warn(`${LOG} no API key, returning mock diff explanation`);
-      return this.mockDiffExplanation();
-    }
-
-    try {
-      const response = await this.genai.models.generateContent({
-        model: MODEL,
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: PHASE2_SCHEMA,
-        },
-      });
-
-      const text = response.text;
-      if (!text) {
-        throw new Error("Gemini returned an empty response");
-      }
-      return JSON.parse(text) as DiffExplanation;
-    } catch (err) {
-      console.error(`${LOG} Gemini diff explanation failed:`, err);
-      return this.mockDiffExplanation();
-    }
-  }
-
-  private buildErrorPrompt(error: CapturedError): string {
-    const errorMsg = error.message.trim() || "No error message — the code runs but produces incorrect results";
-    return PHASE1_PROMPT
-      .replace("{{language}}", error.language)
-      .replace("{{filename}}", error.file)
-      .replace("{{errorMessage}}", errorMsg)
-      .replace("{{codeContext}}", error.codeContext);
-  }
-
-  private buildDiffPrompt(diff: CapturedDiff, originalError: string): string {
-    return PHASE2_PROMPT
-      .replace("{{language}}", diff.language)
-      .replace("{{filename}}", diff.file)
-      .replace("{{originalError}}", originalError)
-      .replace("{{diff}}", diff.unifiedDiff);
-  }
-
-  private mockErrorExplanation(error: CapturedError): ErrorExplanation {
-    return {
-      category: error.message.toLowerCase().includes("syntax")
-        ? "Syntax Error"
-        : error.message.toLowerCase().includes("type")
-        ? "Runtime Error"
-        : "Logic Error",
-      location: `${error.file}, line ${error.line}`,
-      explanation: `The error "${error.message}" means your code has a problem that prevents it from running correctly. Check the indicated line for issues.`,
-      howToFix: "Review the error message and the code at the indicated line. Look for typos, missing brackets, or undefined variables.",
-      howToPrevent: "Always check your code for common mistakes before running. Use a linter to catch issues early.",
-      bestPractices: "Use TypeScript strict mode and enable ESLint to catch potential errors before they happen.",
-    };
-  }
-
-  private mockDiffExplanation(): DiffExplanation {
-    return {
-      whatChanged: "The AI modified the code to fix the reported error.",
-      whyItFixes: "The changes address the root cause of the error by correcting the problematic code pattern.",
-      keyTakeaway: "Always understand what changed in your code and why before accepting an AI fix.",
-    };
   }
 }
 
-// --- Structured output schemas ---
+// ---------------------------------------------------------------------------
+// Module-level state
+// ---------------------------------------------------------------------------
+
+let genai: GoogleGenAI | undefined;
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Initialize the Gemini client.
+ * @param secrets – object with `get(key)` that returns the API key
+ * @throws FlowFixerError when no API key is found
+ */
+export async function initialize(
+  secrets: { get(key: string): PromiseLike<string | undefined> | string | undefined }
+): Promise<void> {
+  const apiKey = await secrets.get("flowfixer.geminiKey");
+  if (!apiKey) {
+    throw new FlowFixerError("API key not found. Use 'FlowFixer: Set Gemini API Key' command.");
+  }
+  genai = new GoogleGenAI({ apiKey });
+  console.log(`${LOG} initialized with Gemini model ${MODEL}`);
+}
+
+/** Returns true if the client has been initialized with an API key. */
+export function isInitialized(): boolean {
+  return genai !== undefined;
+}
+
+/**
+ * Phase 1 — Explain an error for a student.
+ * @throws FlowFixerError on API failure or empty response
+ */
+export async function analyzeError(request: ErrorAnalysisRequest): Promise<Phase1Response> {
+  if (!genai) {
+    throw new FlowFixerError("LLM client not initialized. Call initialize() first.");
+  }
+
+  const prompt = buildErrorPrompt(request);
+
+  try {
+    const response = await genai.models.generateContent({
+      model: MODEL,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: PHASE1_SCHEMA,
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+      throw new FlowFixerError("Gemini returned an empty response");
+    }
+    return JSON.parse(text) as Phase1Response;
+  } catch (err) {
+    if (err instanceof FlowFixerError) throw err;
+    throw new FlowFixerError("Failed to analyze error", err);
+  }
+}
+
+/**
+ * Phase 2 — Explain a diff (what the AI fix changed).
+ * @throws FlowFixerError on API failure or empty response
+ */
+export async function analyzeDiff(request: DiffAnalysisRequest): Promise<Phase2Response> {
+  if (!genai) {
+    throw new FlowFixerError("LLM client not initialized. Call initialize() first.");
+  }
+
+  const prompt = buildDiffPrompt(request);
+
+  try {
+    const response = await genai.models.generateContent({
+      model: MODEL,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: PHASE2_SCHEMA,
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+      throw new FlowFixerError("Gemini returned an empty response");
+    }
+    return JSON.parse(text) as Phase2Response;
+  } catch (err) {
+    if (err instanceof FlowFixerError) throw err;
+    throw new FlowFixerError("Failed to analyze diff", err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Prompt builders
+// ---------------------------------------------------------------------------
+
+function buildErrorPrompt(req: ErrorAnalysisRequest): string {
+  const errorMsg = req.errorMessage.trim() || "No error message — the code runs but produces incorrect results";
+  return PHASE1_PROMPT
+    .replace("{{language}}", req.language)
+    .replace("{{filename}}", req.filename)
+    .replace("{{errorMessage}}", errorMsg)
+    .replace("{{codeContext}}", req.codeContext);
+}
+
+function buildDiffPrompt(req: DiffAnalysisRequest): string {
+  return PHASE2_PROMPT
+    .replace("{{language}}", req.language)
+    .replace("{{filename}}", req.filename)
+    .replace("{{originalError}}", req.originalError)
+    .replace("{{diff}}", req.diff);
+}
+
+// ---------------------------------------------------------------------------
+// Structured output schemas
+// ---------------------------------------------------------------------------
 
 const PHASE1_SCHEMA = {
   type: Type.OBJECT,
@@ -170,7 +190,9 @@ const PHASE2_SCHEMA = {
   required: ["whatChanged", "whyItFixes", "keyTakeaway"],
 } as const;
 
-// --- Few-shot prompts ---
+// ---------------------------------------------------------------------------
+// Few-shot prompts
+// ---------------------------------------------------------------------------
 
 const PHASE1_PROMPT = `You are a coding education assistant. A student just hit an error they don't understand. Your job is to explain it clearly so they can learn from it.
 
