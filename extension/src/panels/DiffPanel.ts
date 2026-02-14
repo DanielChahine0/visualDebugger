@@ -62,7 +62,7 @@ export class DiffPanelProvider implements vscode.WebviewViewProvider {
   <div id="root">
     <div id="empty-state" class="empty-state">
       <p>No AI fixes detected yet.</p>
-      <p class="muted">After an error is explained, FlowFixer will track the next file save to show what changed.</p>
+      <p class="muted">After an error is explained, Visual Debugger will track the next file save to show what changed.</p>
     </div>
     <div id="diff-content" style="display:none;">
       <h3>What the AI changed</h3>

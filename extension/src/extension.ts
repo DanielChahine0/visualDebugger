@@ -10,6 +10,14 @@ import { CapturedError, BugRecord } from "./types";
 import { getSeedBugRecords } from "./seedData";
 
 const LOG = "[FlowFixer]";
+type StatusState =
+  | "ready"
+  | "needsKey"
+  | "analyzingError"
+  | "errorExplained"
+  | "analyzingDiff"
+  | "diffReviewed"
+  | "analysisFailed";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   console.log(`${LOG} activating...`);
@@ -22,7 +30,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   try {
     await initLLM(context.secrets);
   } catch {
-    console.warn(`${LOG} LLM not initialized — set API key with 'FlowFixer: Set Gemini API Key'`);
+    console.warn(`${LOG} LLM not initialized — set API key with 'Visual Debugger: Set Gemini API Key'`);
   }
 
   // --- Storage ---
@@ -46,6 +54,69 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     return stored.length > 0 ? stored : getSeedBugRecords();
   }
 
+  // --- P2 polish: persistent status bar indicator ---
+  const statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  statusItem.name = "Visual Debugger";
+  statusItem.command = "flowfixer.showDashboard";
+  context.subscriptions.push(statusItem);
+
+  let resetStatusTimer: NodeJS.Timeout | undefined;
+  const clearResetTimer = () => {
+    if (resetStatusTimer) {
+      clearTimeout(resetStatusTimer);
+      resetStatusTimer = undefined;
+    }
+  };
+
+  const updateStatus = (state: StatusState): void => {
+    clearResetTimer();
+
+    switch (state) {
+      case "ready":
+        statusItem.text = "$(bug) Visual Debugger Ready";
+        statusItem.tooltip = "Visual Debugger is active. Click to open Bug Dashboard.";
+        statusItem.command = "flowfixer.showDashboard";
+        break;
+      case "needsKey":
+        statusItem.text = "$(key) Visual Debugger: Set Gemini Key";
+        statusItem.tooltip = "Gemini API key is required for analysis. Click to configure.";
+        statusItem.command = "flowfixer.setGeminiKey";
+        break;
+      case "analyzingError":
+        statusItem.text = "$(loading~spin) Visual Debugger: Analyzing error...";
+        statusItem.tooltip = "Visual Debugger is analyzing the detected error.";
+        statusItem.command = "flowfixer.showErrorPanel";
+        break;
+      case "errorExplained":
+        statusItem.text = "$(check) Visual Debugger: Error explained";
+        statusItem.tooltip = "Error explanation ready. Click to open the panel.";
+        statusItem.command = "flowfixer.showErrorPanel";
+        resetStatusTimer = setTimeout(() => updateStatus(isInitialized() ? "ready" : "needsKey"), 5000);
+        break;
+      case "analyzingDiff":
+        statusItem.text = "$(loading~spin) Visual Debugger: Reviewing fix...";
+        statusItem.tooltip = "Visual Debugger is analyzing the code diff.";
+        statusItem.command = "flowfixer.showDiffPanel";
+        break;
+      case "diffReviewed":
+        statusItem.text = "$(git-compare) Visual Debugger: Fix reviewed";
+        statusItem.tooltip = "Diff review ready. Click to open the panel.";
+        statusItem.command = "flowfixer.showDiffPanel";
+        resetStatusTimer = setTimeout(() => updateStatus(isInitialized() ? "ready" : "needsKey"), 5000);
+        break;
+      case "analysisFailed":
+        statusItem.text = "$(error) Visual Debugger: Analysis failed";
+        statusItem.tooltip = "Analysis failed. Check API key and logs, then retry.";
+        statusItem.command = "flowfixer.showDashboard";
+        resetStatusTimer = setTimeout(() => updateStatus(isInitialized() ? "ready" : "needsKey"), 5000);
+        break;
+    }
+
+    statusItem.show();
+  };
+
+  updateStatus(isInitialized() ? "ready" : "needsKey");
+
   // --- Pre-populate dashboard on activation ---
   // Use setImmediate-style delay so the webview has time to resolve
   setTimeout(async () => {
@@ -64,9 +135,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Start tracking file changes for Phase 2
     diffEngine.startTracking(error.file);
 
-    const statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    statusItem.text = "$(loading~spin) FlowFixer: Analyzing error...";
-    statusItem.show();
+    updateStatus("analyzingError");
 
     try {
       if (!isInitialized()) {
@@ -104,15 +173,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         data: { bugs: allBugs },
       });
 
-      statusItem.text = "$(bug) FlowFixer: Error explained";
-      setTimeout(() => statusItem.dispose(), 5000);
+      updateStatus("errorExplained");
     } catch (err) {
       console.error(`${LOG} Phase 1 failed:`, err);
-      statusItem.text = "$(error) FlowFixer: Analysis failed";
-      setTimeout(() => statusItem.dispose(), 5000);
+      updateStatus("analysisFailed");
 
       if (err instanceof FlowFixerError) {
-        vscode.window.showWarningMessage(`FlowFixer: ${err.message}`);
+        vscode.window.showWarningMessage(`Visual Debugger: ${err.message}`);
       }
     }
   }
@@ -124,9 +191,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   diffEngine.onDiffDetected(async (diff) => {
     console.log(`${LOG} Phase 2: diff detected in ${diff.file}`);
 
-    const statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    statusItem.text = "$(loading~spin) FlowFixer: Analyzing fix...";
-    statusItem.show();
+    updateStatus("analyzingDiff");
 
     try {
       if (!isInitialized()) {
@@ -147,25 +212,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         data: { ...diffExplanation, diff },
       });
 
-      statusItem.text = "$(diff) FlowFixer: Fix reviewed";
-      setTimeout(() => statusItem.dispose(), 5000);
+      updateStatus("diffReviewed");
     } catch (err) {
       console.error(`${LOG} Phase 2 failed:`, err);
-      statusItem.text = "$(error) FlowFixer: Diff analysis failed";
-      setTimeout(() => statusItem.dispose(), 5000);
+      updateStatus("analysisFailed");
     }
   });
 
   // --- Commands ---
   context.subscriptions.push(
-    vscode.commands.registerCommand("flowfixer.showErrorPanel", () => {
-      vscode.commands.executeCommand("flowfixer.errorPanel.focus");
+    vscode.commands.registerCommand("flowfixer.showErrorPanel", async () => {
+      await vscode.commands.executeCommand("flowfixer.errorPanel.focus");
     }),
-    vscode.commands.registerCommand("flowfixer.showDiffPanel", () => {
-      vscode.commands.executeCommand("flowfixer.diffPanel.focus");
+    vscode.commands.registerCommand("flowfixer.showDiffPanel", async () => {
+      await vscode.commands.executeCommand("flowfixer.diffPanel.focus");
     }),
     vscode.commands.registerCommand("flowfixer.showDashboard", async () => {
-      vscode.commands.executeCommand("flowfixer.dashboardPanel.focus");
+      await vscode.commands.executeCommand("flowfixer.dashboardPanel.focus");
       const bugs = await getBugsWithFallback();
       dashboardPanel.postMessage({
         type: "showDashboard",
@@ -182,9 +245,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         await context.secrets.store("flowfixer.geminiKey", key);
         try {
           await initLLM(context.secrets);
-          vscode.window.showInformationMessage("FlowFixer: Gemini API key saved and connected.");
+          updateStatus("ready");
+          vscode.window.showInformationMessage("Visual Debugger: Gemini API key saved and connected.");
         } catch {
-          vscode.window.showWarningMessage("FlowFixer: Key saved but initialization failed. Check the key.");
+          updateStatus("needsKey");
+          vscode.window.showWarningMessage("Visual Debugger: Key saved but initialization failed. Check the key.");
         }
       }
     }),
@@ -206,7 +271,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (!uri) {
         await context.secrets.delete("flowfixer.mongoUri");
         storage.setMongoUri(undefined);
-        vscode.window.showInformationMessage("FlowFixer: MongoDB disabled. Using local fallback storage.");
+        vscode.window.showInformationMessage("Visual Debugger: MongoDB disabled. Using local fallback storage.");
         return;
       }
 
@@ -215,9 +280,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const connected = await storage.testMongoConnection();
       if (connected) {
         const synced = await storage.syncLocalToMongo();
-        vscode.window.showInformationMessage(`FlowFixer: MongoDB URI saved and connected. Synced ${synced} local record(s).`);
+        vscode.window.showInformationMessage(`Visual Debugger: MongoDB URI saved and connected. Synced ${synced} local record(s).`);
       } else {
-        vscode.window.showWarningMessage("FlowFixer: URI saved, but connection failed. Using local fallback storage.");
+        vscode.window.showWarningMessage("Visual Debugger: URI saved, but connection failed. Using local fallback storage.");
       }
     }),
 
@@ -225,7 +290,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("flowfixer.analyzeCurrentFile", async () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
-        vscode.window.showWarningMessage("FlowFixer: No active editor.");
+        vscode.window.showWarningMessage("Visual Debugger: No active editor.");
         return;
       }
 
@@ -298,7 +363,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(errorListener, diffEngine, storage);
 
   console.log(`${LOG} activated successfully`);
-  vscode.window.showInformationMessage("FlowFixer is active! Errors will be explained automatically.");
+  vscode.window.showInformationMessage("Visual Debugger is active! Errors will be explained automatically.");
 }
 
 export function deactivate(): void {

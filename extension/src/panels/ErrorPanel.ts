@@ -62,7 +62,7 @@ export class ErrorPanelProvider implements vscode.WebviewViewProvider {
   <div id="root">
     <div id="empty-state" class="empty-state">
       <p>No errors detected yet.</p>
-      <p class="muted">FlowFixer will explain errors when they appear in your code.</p>
+      <p class="muted">Visual Debugger will explain errors when they appear in your code.</p>
     </div>
     <div id="error-content" style="display:none;">
       <div class="badge-row">

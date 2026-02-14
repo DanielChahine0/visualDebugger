@@ -98,7 +98,7 @@ export class DashboardPanelProvider implements vscode.WebviewViewProvider {
   <div id="root">
     <div id="empty-state" class="empty-state">
       <p>No bug history yet.</p>
-      <p class="muted">Your bug patterns will appear here as FlowFixer tracks errors.</p>
+      <p class="muted">Your bug patterns will appear here as Visual Debugger tracks errors.</p>
     </div>
     <div id="dashboard-content" style="display:none;">
       <h3>Bug Categories</h3>

@@ -1,7 +1,7 @@
 {
   "name": "flowfixer",
-  "displayName": "FlowFixer",
-  "description": "AI Bug Tutor — explains errors before the fix, reviews AI changes after",
+  "displayName": "Visual Debugger",
+  "description": "Visual Debugger — explains errors before the fix, reviews AI changes after",
   "version": "0.1.0",
   "publisher": "flowfixer-team",
   "engines": {
@@ -15,41 +15,50 @@
     "onLanguage:javascript",
     "onLanguage:typescript",
     "onLanguage:javascriptreact",
-    "onLanguage:typescriptreact"
+    "onLanguage:typescriptreact",
+    "onView:flowfixer.errorPanel",
+    "onView:flowfixer.diffPanel",
+    "onView:flowfixer.dashboardPanel",
+    "onCommand:flowfixer.showErrorPanel",
+    "onCommand:flowfixer.showDiffPanel",
+    "onCommand:flowfixer.showDashboard",
+    "onCommand:flowfixer.setGeminiKey",
+    "onCommand:flowfixer.setMongoUri",
+    "onCommand:flowfixer.analyzeCurrentFile"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "flowfixer.showErrorPanel",
-        "title": "FlowFixer: Show Error Explanation"
+        "title": "Visual Debugger: Show Error Explanation"
       },
       {
         "command": "flowfixer.showDiffPanel",
-        "title": "FlowFixer: Show Diff Review"
+        "title": "Visual Debugger: Show Diff Review"
       },
       {
         "command": "flowfixer.showDashboard",
-        "title": "FlowFixer: Show Bug Dashboard"
+        "title": "Visual Debugger: Show Bug Dashboard"
       },
       {
         "command": "flowfixer.setGeminiKey",
-        "title": "FlowFixer: Set Gemini API Key"
+        "title": "Visual Debugger: Set Gemini API Key"
       },
       {
         "command": "flowfixer.setMongoUri",
-        "title": "FlowFixer: Set MongoDB Atlas URI"
+        "title": "Visual Debugger: Set MongoDB Atlas URI"
       },
       {
         "command": "flowfixer.analyzeCurrentFile",
-        "title": "FlowFixer: Analyze Current File"
+        "title": "Visual Debugger: Analyze Current File"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
           "id": "flowfixer",
-          "title": "FlowFixer",
+          "title": "Visual Debugger",
           "icon": "$(bug)"
         }
       ]

@@ -46,7 +46,7 @@ export async function initialize(
 ): Promise<void> {
   const apiKey = await secrets.get("flowfixer.geminiKey");
   if (!apiKey) {
-    throw new FlowFixerError("API key not found. Use 'FlowFixer: Set Gemini API Key' command.");
+    throw new FlowFixerError("API key not found. Use 'Visual Debugger: Set Gemini API Key' command.");
   }
   genai = new GoogleGenAI({ apiKey });
   console.log(`${LOG} initialized with Gemini model ${MODEL}`);
