@@ -7,6 +7,7 @@ const GLOBAL_STATE_KEY = "flowfixer.bugHistory";
 
 export interface StorageProvider {
   save(record: BugRecord): Promise<void>;
+  update(record: BugRecord): Promise<void>;
   getAll(): Promise<BugRecord[]>;
   dispose(): void;
 }
@@ -23,6 +24,18 @@ class GlobalStateStorage implements StorageProvider {
     existing.push(record);
     await this.globalState.update(GLOBAL_STATE_KEY, existing);
     console.log(`${LOG} [globalState] saved bug record: ${record.id}`);
+  }
+
+  async update(record: BugRecord): Promise<void> {
+    const existing = await this.getAll();
+    const index = existing.findIndex((item) => item.id === record.id);
+    if (index >= 0) {
+      existing[index] = record;
+    } else {
+      existing.push(record);
+    }
+    await this.globalState.update(GLOBAL_STATE_KEY, existing);
+    console.log(`${LOG} [globalState] updated bug record: ${record.id}`);
   }
 
   async getAll(): Promise<BugRecord[]> {
@@ -76,6 +89,10 @@ class MongoStorage implements StorageProvider {
       { upsert: true }
     );
     console.log(`${LOG} [MongoDB] saved bug record: ${record.id}`);
+  }
+
+  async update(record: BugRecord): Promise<void> {
+    await this.save(record);
   }
 
   async getAll(): Promise<BugRecord[]> {
@@ -154,6 +171,18 @@ export class FlowFixerStorage implements StorageProvider {
         await this.mongo.save(record);
       } catch (err) {
         console.warn(`${LOG} MongoDB save failed, globalState has it:`, err);
+      }
+    }
+  }
+
+  async update(record: BugRecord): Promise<void> {
+    await this.globalStateStorage.update(record);
+
+    if (this.mongo) {
+      try {
+        await this.mongo.update(record);
+      } catch (err) {
+        console.warn(`${LOG} MongoDB update failed, globalState has it:`, err);
       }
     }
   }

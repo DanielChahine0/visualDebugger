@@ -19,9 +19,12 @@ const extensionConfig = {
 
 /** @type {import('esbuild').BuildOptions} */
 const webviewConfig = {
-  entryPoints: [path.resolve(__dirname, "src/webview/diffPanelScript.ts")],
+  entryPoints: [
+    path.resolve(__dirname, "src/webview/diffPanelScript.ts"),
+    path.resolve(__dirname, "src/webview/dashboardScript.ts"),
+  ],
   bundle: true,
-  outfile: path.resolve(__dirname, "dist/webview/diffPanel.js"),
+  outdir: path.resolve(__dirname, "dist/webview"),
   format: "iife",
   platform: "browser",
   target: "es2020",

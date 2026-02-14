@@ -23,10 +23,12 @@ export interface CapturedError {
 export interface ErrorExplanation {
   category: BugCategory;
   location: string;
+  tldr: string;
   explanation: string;
   howToFix: string;
   howToPrevent: string;
   bestPractices: string;
+  keyTerms: string[];
   quiz?: Quiz;
 }
 
@@ -84,7 +86,7 @@ export type ExtToWebviewMessage =
   | { type: "showError"; data: ErrorExplanation & { raw: CapturedError } }
   | { type: "showDiff"; data: DiffExplanation & { diff: CapturedDiff } }
   | { type: "showDashboard"; data: { bugs: BugRecord[] } }
-  | { type: "playAudio"; data: { audio: string } }
+  | { type: "playAudio"; data: { base64Audio: string; mimeType: string } }
   | { type: "ttsError"; data: { message: string } }
   | { type: "clear" };
 

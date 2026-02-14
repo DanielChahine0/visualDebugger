@@ -23,6 +23,7 @@
     "onCommand:flowfixer.showDiffPanel",
     "onCommand:flowfixer.showDashboard",
     "onCommand:flowfixer.setGeminiKey",
+    "onCommand:flowfixer.setElevenLabsKey",
     "onCommand:flowfixer.setMongoUri",
     "onCommand:flowfixer.setElevenLabsKey",
     "onCommand:flowfixer.analyzeCurrentFile"
@@ -45,6 +46,10 @@
       {
         "command": "flowfixer.setGeminiKey",
         "title": "Visual Debugger: Set Gemini API Key"
+      },
+      {
+        "command": "flowfixer.setElevenLabsKey",
+        "title": "Visual Debugger: Set ElevenLabs API Key"
       },
       {
         "command": "flowfixer.setMongoUri",
@@ -108,6 +113,8 @@
   },
   "dependencies": {
     "@google/genai": "^1.0.0",
+    "chart.js": "^4.5.1",
+    "diff2html": "^3.4.52",
     "diff": "^5.2.0",
     "mongodb": "^6.3.0",
     "prismjs": "^1.30.0"

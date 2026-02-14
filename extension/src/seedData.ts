@@ -72,10 +72,12 @@ export function getSeedBugRecords(): BugRecord[] {
         const explanation: ErrorExplanation = {
             category,
             location,
+            tldr: entry.error,
             explanation: entry.error,
             howToFix: "",
             howToPrevent: "",
             bestPractices: "",
+            keyTerms: [],
         };
 
         return {

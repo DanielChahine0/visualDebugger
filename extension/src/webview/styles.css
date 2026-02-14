@@ -952,3 +952,42 @@ code:hover {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--vscode-scrollbarSlider-hoverBackground, rgba(127, 127, 127, 0.5));
 }
+
+.toolbar-row {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0;
+    flex-wrap: wrap;
+}
+
+.info-card {
+    border: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.2));
+    border-radius: 6px;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+}
+
+.info-card summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.key-term {
+    background: rgba(255, 235, 59, 0.2);
+    color: var(--vscode-foreground);
+    padding: 1px 4px;
+    border-radius: 3px;
+    margin-right: 4px;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}

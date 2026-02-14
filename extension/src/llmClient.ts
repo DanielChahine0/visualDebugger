@@ -154,10 +154,12 @@ const PHASE1_SCHEMA = {
       enum: ["Syntax Error", "Logic Error", "Runtime Error"],
     },
     location: { type: Type.STRING },
+    tldr: { type: Type.STRING },
     explanation: { type: Type.STRING },
     howToFix: { type: Type.STRING },
     howToPrevent: { type: Type.STRING },
     bestPractices: { type: Type.STRING },
+    keyTerms: { type: Type.ARRAY, items: { type: Type.STRING } },
     quiz: {
       type: Type.OBJECT,
       properties: {
@@ -172,10 +174,12 @@ const PHASE1_SCHEMA = {
   required: [
     "category",
     "location",
+    "tldr",
     "explanation",
     "howToFix",
     "howToPrevent",
     "bestPractices",
+    "keyTerms",
     "quiz",
   ],
 } as const;
@@ -215,6 +219,8 @@ Respond with a JSON object containing:
 
 - "location": File name and line number(s) where the bug is. Format: "line N, filename.ext"
 
+- "tldr": One sentence under 15 words summarizing the root issue.
+
 - "explanation": Decode the error message piece by piece for a beginner. What does each part of the error message mean? If there is no error message (logic error), explain what the code does wrong and what symptoms the student would see. Under 60 words.
 
 - "howToFix": Step-by-step instructions referencing the actual code the student wrote. Tell them exactly what to change, on which line. Under 40 words.
@@ -222,6 +228,8 @@ Respond with a JSON object containing:
 - "howToPrevent": A general principle the student can apply next time to avoid this class of bug. Under 30 words.
 
 - "bestPractices": An industry best practice related to this bug type. Under 30 words.
+
+- "keyTerms": 1-3 key words or short phrases from the error to highlight.
 
 - "quiz": A multiple-choice question (4 options, one correct) testing whether the student understands WHY the error happened — not just what to do. The wrong options should be plausible but clearly wrong if you understood the explanation. Include a brief explanation of why the correct answer is right.
 
@@ -244,10 +252,12 @@ Output:
 {
   "category": "Syntax Error",
   "location": "line 17, BrokenSyntax.tsx",
+  "tldr": "Your return statement is missing a closing parenthesis.",
   "explanation": "The error says 'Unexpected token, expected \\",\\"'. This means the parser reached the end of your return statement and found something it didn't expect. It's looking for a closing ')' to match the '(' on line 12, but instead it finds '}'. The return() call was never closed.",
   "howToFix": "Add a closing ')' after the </div> on line 16 so the return statement is properly closed: return ( <div>...</div> )",
   "howToPrevent": "When you type an opening bracket or parenthesis, immediately type the closing one, then fill in the middle.",
   "bestPractices": "Use an editor with bracket matching enabled. Most editors highlight unmatched brackets in red.",
+  "keyTerms": ["Unexpected token", "expected ','", "closing parenthesis"],
   "quiz": {
     "question": "What is the root cause of this SyntaxError?",
     "options": [
@@ -278,10 +288,12 @@ Output:
 {
   "category": "Logic Error",
   "location": "line 10, BrokenLogic.tsx",
+  "tldr": "Your loop runs one step past the array length.",
   "explanation": "There is no crash, but the loop runs one time too many. The condition 'i <= items.length' should be 'i < items.length'. Arrays are zero-indexed, so an array of 3 items has indices 0, 1, 2. When i equals 3, items[3] is undefined, so the list renders an extra empty item.",
   "howToFix": "On line 10, change '<=' to '<': for (let i = 0; i < items.length; i++). This stops the loop before going past the last valid index.",
   "howToPrevent": "Remember: array indices go from 0 to length - 1. Always use '< length' (not '<= length') when looping through arrays.",
   "bestPractices": "Prefer .map() or for...of loops over manual index loops. They handle bounds automatically and eliminate off-by-one bugs.",
+  "keyTerms": ["off-by-one", "<= items.length", "undefined item"],
   "quiz": {
     "question": "Why does the loop render an extra undefined item?",
     "options": [
@@ -314,10 +326,12 @@ Output:
 {
   "category": "Runtime Error",
   "location": "line 10, BrokenRuntime.tsx",
+  "tldr": "You called .map() before data was initialized.",
   "explanation": "The error says 'Cannot read properties of undefined (reading \\"map\\")'. This means you called .map() on something that is undefined. On line 5, useState() is called without a default value, so 'data' starts as undefined. On line 10, the component tries to call data.map() before the fetch on line 7 has finished, and undefined has no .map() method.",
   "howToFix": "Initialize state with an empty array: useState([]). This way data is always an array, even before the fetch completes. You can also add a guard: data?.map() or (data ?? []).map().",
   "howToPrevent": "Always give useState a default value that matches how you use the variable. If you call .map(), initialize with [].",
   "bestPractices": "Use optional chaining (data?.map()) or nullish coalescing ((data ?? []).map()) to guard against undefined values in async data flows.",
+  "keyTerms": ["Cannot read properties", "undefined", "map"],
   "quiz": {
     "question": "Why does calling .map() on 'data' throw a TypeError?",
     "options": [
@@ -339,6 +353,8 @@ Output:
 - Keep explanation under 60 words.
 - Keep howToFix actionable and specific — tell the student exactly which line to change and what to change it to.
 - Keep howToPrevent and bestPractices each under 30 words.
+- Keep tldr under 15 words.
+- Return 1-3 keyTerms.
 - Quiz question should test understanding of WHY the error happened, not just what to do about it.
 - Quiz distractors should be plausible but clearly wrong to someone who read the explanation.`;
 

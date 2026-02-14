@@ -31,6 +31,7 @@ function makeSecrets(apiKey?: string) {
 const MOCK_PHASE1: Phase1Response = {
   category: "Runtime Error",
   location: "line 15, App.tsx",
+  tldr: "You called .map() on undefined data.",
   explanation:
     "You're trying to call .map() on a variable that is undefined. The 'data' variable hasn't been set yet when the component first renders.",
   howToFix:
@@ -39,6 +40,7 @@ const MOCK_PHASE1: Phase1Response = {
     "Always initialize state with a default value that matches the type you expect.",
   bestPractices:
     "Use optional chaining (data?.map()) or provide a fallback (data || []).map() to guard against undefined values.",
+  keyTerms: ["Cannot read properties", "undefined", "map"],
   quiz: {
     question: "Why does calling .map() on undefined throw an error?",
     options: [
@@ -56,10 +58,12 @@ const MOCK_PHASE1: Phase1Response = {
 const MOCK_PHASE1_SYNTAX: Phase1Response = {
   category: "Syntax Error",
   location: "line 17, BrokenSyntax.tsx",
+  tldr: "The return statement is missing a closing parenthesis.",
   explanation: "The error says 'Unexpected token, expected \",\"'. The parser reached the end of your return statement and found '}' instead of ')'. The return() on line 12 was never closed.",
   howToFix: "Add a closing ')' after </div> on line 16 so the return statement is properly closed.",
   howToPrevent: "When you type an opening bracket, immediately type the closing one, then fill in the middle.",
   bestPractices: "Use an editor with bracket matching. Most editors highlight unmatched brackets in red.",
+  keyTerms: ["Unexpected token", "expected ','", "closing parenthesis"],
   quiz: {
     question: "What is the root cause of this SyntaxError?",
     options: [
@@ -76,10 +80,12 @@ const MOCK_PHASE1_SYNTAX: Phase1Response = {
 const MOCK_PHASE1_LOGIC: Phase1Response = {
   category: "Logic Error",
   location: "line 10, BrokenLogic.tsx",
+  tldr: "The loop runs one step beyond the array.",
   explanation: "No crash, but the loop runs one time too many. 'i <= items.length' should be 'i < items.length'. Arrays are zero-indexed, so items[3] is undefined, rendering an extra empty item.",
   howToFix: "On line 10, change '<=' to '<': for (let i = 0; i < items.length; i++).",
   howToPrevent: "Array indices go from 0 to length - 1. Always use '< length' not '<= length'.",
   bestPractices: "Prefer .map() or for...of loops over manual index loops to eliminate off-by-one bugs.",
+  keyTerms: ["off-by-one", "<= items.length", "undefined item"],
   quiz: {
     question: "Why does the loop render an extra undefined item?",
     options: [
