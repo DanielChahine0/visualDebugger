@@ -67,7 +67,7 @@
     <div id="diff-panel">
         <!-- Header -->
         <div class="card-header">
-            <h1>📝 AI Fix Review</h1>
+            <h1>AI Fix Review</h1>
         </div>
 
         <!-- Empty state -->
@@ -93,17 +93,17 @@
         <!-- AI Explanation Card ("Why It Broke") -->
         <div class="card slide-in diff-explanation" id="explanation-card">
             <div class="section">
-                <div class="section-title"><span class="icon">🤖</span> What the AI Changed</div>
+                <div class="section-title">What the AI Changed</div>
                 <div class="section-content" id="what-changed"></div>
             </div>
 
             <div class="section" style="margin-top: 16px;">
-                <div class="section-title"><span class="icon">🎯</span> Why This Fixes It</div>
+                <div class="section-title">Why This Fixes It</div>
                 <div class="section-content" id="why-fixes"></div>
             </div>
 
             <div class="section" style="margin-top: 16px;">
-                <div class="section-title"><span class="icon">💡</span> Key Takeaway</div>
+                <div class="section-title">Key Takeaway</div>
                 <div class="section-content" id="key-takeaway" style="font-weight: 500; font-style: italic;"></div>
             </div>
         </div>
@@ -113,10 +113,10 @@
         <!-- TTS Controls -->
         <div class="mt-12" id="tts-controls" style="display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 20px;">
             <div class="voice-toggle-group">
-                <button class="voice-toggle active" id="voice-female">👩 Female</button>
-                <button class="voice-toggle" id="voice-male">👨 Male</button>
+                <button class="voice-toggle active" id="voice-female">Female</button>
+                <button class="voice-toggle" id="voice-male">Male</button>
             </div>
-            <button class="btn btn--secondary" id="tts-btn">🔊 Read Aloud</button>
+            <button class="btn btn--secondary" id="tts-btn">Read Aloud</button>
         </div>
     </div>
 
@@ -255,7 +255,7 @@
         ttsBtn.addEventListener('click', async () => {
             if (isSpeaking && ttsAudio) {
                 ttsAudio.pause(); ttsAudio = null; isSpeaking = false;
-                ttsBtn.textContent = '🔊 Read Aloud';
+                ttsBtn.textContent = 'Read Aloud';
                 return;
             }
             
@@ -263,7 +263,7 @@
             const textToRead = cleanTextForTTS(data.whatChanged + '. ' + data.whyItFixes + '. Key takeaway: ' + data.keyTakeaway);
             
             const apiKey = (typeof ELEVENLABS_API_KEY !== 'undefined' && ELEVENLABS_API_KEY !== 'your_api_key_here') ? ELEVENLABS_API_KEY : null;
-            ttsBtn.textContent = '⏳ Loading...';
+            ttsBtn.textContent = 'Loading...';
             
             if (apiKey) {
                 try {
@@ -282,8 +282,8 @@
                     const url = URL.createObjectURL(blob);
                     ttsAudio = new Audio(url);
                     isSpeaking = true;
-                    ttsBtn.textContent = '⏹️ Stop';
-                    ttsAudio.onended = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; URL.revokeObjectURL(url); };
+                    ttsBtn.textContent = 'Stop';
+                    ttsAudio.onended = () => { isSpeaking = false; ttsBtn.textContent = 'Read Aloud'; URL.revokeObjectURL(url); };
                     ttsAudio.play();
                     return;
                 } catch (e) { console.warn(e); }

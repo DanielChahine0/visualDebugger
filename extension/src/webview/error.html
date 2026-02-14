@@ -13,7 +13,7 @@
     <div id="error-panel">
         <!-- Header with category badge -->
         <div class="card-header">
-            <h1>🔍 Error Explanation</h1>
+            <h1>Error Explanation</h1>
         </div>
 
         <!-- Empty state — shown before any error is detected -->
@@ -38,7 +38,7 @@
         <!-- What Happened -->
         <div class="card slide-in" id="explanation-card">
             <div class="section">
-                <div class="section-title"><span class="icon">💡</span> What Happened</div>
+                <div class="section-title">What Happened</div>
                 <div class="section-content" id="explanation-text"></div>
             </div>
         </div>
@@ -46,7 +46,7 @@
         <!-- How to Fix -->
         <div class="card slide-in" id="fix-card">
             <div class="section">
-                <div class="section-title"><span class="icon">🔧</span> How to Fix</div>
+                <div class="section-title">How to Fix</div>
                 <div class="section-content" id="fix-text"></div>
             </div>
         </div>
@@ -54,7 +54,7 @@
         <!-- How to Prevent -->
         <div class="card slide-in" id="prevent-card">
             <div class="section">
-                <div class="section-title"><span class="icon">🛡️</span> How to Prevent</div>
+                <div class="section-title">How to Prevent</div>
                 <div class="section-content" id="prevent-text"></div>
             </div>
         </div>
@@ -62,7 +62,7 @@
         <!-- Best Practices -->
         <div class="card slide-in" id="practices-card">
             <div class="section">
-                <div class="section-title"><span class="icon">⭐</span> Best Practices</div>
+                <div class="section-title">Best Practices</div>
                 <div class="section-content" id="practices-text"></div>
             </div>
         </div>
@@ -70,7 +70,7 @@
         <!-- Quiz Section -->
         <div class="card slide-in" id="quiz-card">
             <div class="section">
-                <div class="section-title"><span class="icon">🧠</span> Test Yourself</div>
+                <div class="section-title">Test Yourself</div>
                 <p class="mb-8" id="quiz-question"></p>
                 <div class="quiz-options" id="quiz-options">
                     <!-- Options rendered by JS -->
@@ -84,10 +84,10 @@
         <!-- TTS Controls -->
         <div class="mt-12" id="tts-controls" style="display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 20px;">
             <div class="voice-toggle-group">
-                <button class="voice-toggle active" id="voice-female">👩 Female</button>
-                <button class="voice-toggle" id="voice-male">👨 Male</button>
+                <button class="voice-toggle active" id="voice-female">Female</button>
+                <button class="voice-toggle" id="voice-male">Male</button>
             </div>
-            <button class="btn btn--secondary" id="tts-btn">🔊 Read Aloud</button>
+            <button class="btn btn--secondary" id="tts-btn">Read Aloud</button>
         </div>
     </div>
 
@@ -174,8 +174,8 @@
                         const isCorrect = index === correctIdx;
                         const fb = document.getElementById('quiz-feedback');
                         fb.textContent = isCorrect
-                            ? '✅ ' + data.quiz.explanation
-                            : '❌ Not quite. ' + data.quiz.explanation;
+                            ? 'Correct! ' + data.quiz.explanation
+                            : 'Not quite. ' + data.quiz.explanation;
                         fb.style.display = 'block';
                         // Add class for specific coloring based on result
                         fb.className = 'quiz-feedback'; // reset
@@ -295,7 +295,7 @@
                 ttsAudio.pause();
                 ttsAudio = null;
                 isSpeaking = false;
-                ttsBtn.textContent = '🔊 Read Aloud';
+                ttsBtn.textContent = 'Read Aloud';
                 return;
             }
 
@@ -310,7 +310,7 @@
             const apiKey = (typeof ELEVENLABS_API_KEY !== 'undefined' && ELEVENLABS_API_KEY !== 'your_api_key_here')
                 ? ELEVENLABS_API_KEY : null;
 
-            ttsBtn.textContent = '⏳ Loading...';
+            ttsBtn.textContent = 'Loading...';
 
             if (apiKey) {
                 try {
@@ -334,10 +334,10 @@
                     const url = URL.createObjectURL(blob);
                     ttsAudio = new Audio(url);
                     isSpeaking = true;
-                    ttsBtn.textContent = '⏹️ Stop';
+                    ttsBtn.textContent = 'Stop';
                     ttsAudio.onended = () => {
                         isSpeaking = false;
-                        ttsBtn.textContent = '🔊 Read Aloud';
+                        ttsBtn.textContent = 'Read Aloud';
                         URL.revokeObjectURL(url);
                     };
                     ttsAudio.play();
@@ -351,12 +351,12 @@
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(textToRead);
                 isSpeaking = true;
-                ttsBtn.textContent = '⏹️ Stop';
-                utterance.onend = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; };
+                ttsBtn.textContent = 'Stop';
+                utterance.onend = () => { isSpeaking = false; ttsBtn.textContent = 'Read Aloud'; };
                 speechSynthesis.speak(utterance);
             } else {
-                ttsBtn.textContent = '❌ TTS Unavailable';
-                setTimeout(() => { ttsBtn.textContent = '🔊 Read Aloud'; }, 3000);
+                ttsBtn.textContent = 'TTS Unavailable';
+                setTimeout(() => { ttsBtn.textContent = 'Read Aloud'; }, 3000);
             }
         });
     </script>
