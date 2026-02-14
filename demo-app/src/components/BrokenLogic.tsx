@@ -4,7 +4,7 @@ export default function StudentRoster() {
   const students = ["Alice", "Bob", "Charlie", "Diana", "Eve"]
 
   const items: ReactElement[] = []
-  for (let i = 0; i <= students.length; i++) {
+  for (let i = 0; i < students.length; i++) {
     items.push(
       <div key={i} className="roster-item">
         <span className="roster-number">{i + 1}.</span>

@@ -8,7 +8,7 @@ interface User {
 }
 
 export default function UserProfiles() {
-  const [users, setUsers] = useState<User[]>()
+  const [users, setUsers] = useState<User[]>([])
 
   useEffect(() => {
     fetch('https://jsonplaceholder.typicode.com/users?_limit=5')
@@ -21,9 +21,7 @@ export default function UserProfiles() {
       <h2>User Profiles</h2>
       <p className="description">Directory of registered users.</p>
       <div className="user-grid">
-        {
-          // @ts-expect-error: Intentional bug — .map() on possibly undefined state
-          users.map(user => (
+        {users.map((user: User) => (
           <div key={user.id} className="user-card">
             <h3>{user.name}</h3>
             <p className="user-email">{user.email}</p>

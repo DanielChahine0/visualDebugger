@@ -20,6 +20,9 @@ export class DiffEngine implements vscode.Disposable {
   /** URI of the file that had the error */
   private trackedUri: string | undefined;
 
+  /** Debounce timer for diagnostics-based detection */
+  private diagDebounceTimer: NodeJS.Timeout | undefined;
+
   constructor() {
     // Capture content just before save
     this.disposables.push(
@@ -35,6 +38,54 @@ export class DiffEngine implements vscode.Disposable {
       vscode.workspace.onDidSaveTextDocument((doc) => {
         if (this.tracking) {
           this.computeDiff(doc);
+        }
+      })
+    );
+
+    // Detect fix applied: when errors clear on the tracked file, compute diff.
+    // This works even without saving (e.g. AI tool applies fix in editor).
+    this.disposables.push(
+      vscode.languages.onDidChangeDiagnostics((e) => {
+        if (!this.tracking || !this.trackedUri) {
+          return;
+        }
+
+        // Check if the tracked file is in the changed URIs
+        const trackedChanged = e.uris.some(
+          (uri) => uri.fsPath === this.trackedUri
+        );
+        if (!trackedChanged) {
+          return;
+        }
+
+        // Check if errors have cleared on the tracked file
+        const trackedUriObj = e.uris.find(
+          (uri) => uri.fsPath === this.trackedUri
+        );
+        if (!trackedUriObj) {
+          return;
+        }
+
+        const diagnostics = vscode.languages.getDiagnostics(trackedUriObj);
+        const errors = diagnostics.filter(
+          (d) => d.severity === vscode.DiagnosticSeverity.Error
+        );
+
+        if (errors.length === 0) {
+          // Errors cleared — a fix was applied. Debounce briefly so content settles.
+          if (this.diagDebounceTimer) {
+            clearTimeout(this.diagDebounceTimer);
+          }
+          this.diagDebounceTimer = setTimeout(() => {
+            this.diagDebounceTimer = undefined;
+            const doc = vscode.workspace.textDocuments.find(
+              (d) => d.uri.fsPath === this.trackedUri
+            );
+            if (doc) {
+              console.log(`${LOG} errors cleared on ${doc.fileName} — computing diff`);
+              this.computeDiff(doc);
+            }
+          }, 500);
         }
       })
     );
@@ -66,6 +117,10 @@ export class DiffEngine implements vscode.Disposable {
     this.tracking = false;
     this.trackedUri = undefined;
     this.beforeSaveContent.clear();
+    if (this.diagDebounceTimer) {
+      clearTimeout(this.diagDebounceTimer);
+      this.diagDebounceTimer = undefined;
+    }
     console.log(`${LOG} stopped tracking`);
   }
 
@@ -119,6 +174,7 @@ export class DiffEngine implements vscode.Disposable {
   }
 
   dispose(): void {
+    this.stopTracking();
     this.disposables.forEach((d) => d.dispose());
     this.onDiffDetectedEmitter.dispose();
   }

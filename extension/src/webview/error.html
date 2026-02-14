@@ -16,15 +16,23 @@
             <h1>🔍 Error Explanation</h1>
         </div>
 
+        <!-- Empty state — shown before any error is detected -->
+        <div id="empty-state" class="card" style="text-align: center; padding: 32px 16px; opacity: 0.7;">
+            <p style="font-size: 1.1em; margin-bottom: 8px;">No errors detected yet.</p>
+            <p class="text-muted text-sm">Run your program and Visual Debugger will automatically explain any errors that appear.</p>
+        </div>
+
+        <!-- Error content — hidden until an error is received -->
+        <div id="error-content" style="display: none;">
+
         <!-- Error Location Card -->
         <div class="card slide-in" id="location-card">
             <div class="card-header">
-                <span class="badge badge--runtime" id="category-badge">Runtime Error</span>
-                <span class="text-muted text-sm" id="error-location">App.tsx, line 15</span>
+                <span class="badge" id="category-badge"></span>
+                <span class="text-muted text-sm" id="error-location"></span>
             </div>
             <p id="error-message"
                 style="font-family: var(--vscode-editor-font-family, monospace); background: var(--vscode-textCodeBlock-background, rgba(127,127,127,0.1)); padding: 10px 14px; border-radius: 4px; font-size: 0.92em;">
-                TypeError: Cannot read properties of undefined (reading 'map')
             </p>
         </div>
 
@@ -32,12 +40,7 @@
         <div class="card slide-in" id="explanation-card">
             <div class="section">
                 <div class="section-title"><span class="icon">💡</span> What Happened</div>
-                <div class="section-content" id="explanation-text">
-                    You're trying to call <code>.map()</code> on a variable called <code>data</code>, but
-                    <code>data</code> is <code>undefined</code>.
-                    This means the variable hasn't been assigned a value yet — likely because an API call hasn't
-                    finished loading when the component tries to render.
-                </div>
+                <div class="section-content" id="explanation-text"></div>
             </div>
         </div>
 
@@ -45,14 +48,7 @@
         <div class="card slide-in" id="fix-card">
             <div class="section">
                 <div class="section-title"><span class="icon">🔧</span> How to Fix</div>
-                <div class="section-content" id="fix-text">
-                    <ol style="padding-left: 18px; margin: 0;">
-                        <li>Go to <strong>line 15</strong> in <code>App.tsx</code></li>
-                        <li>Initialize your state with an empty array: <code>const [data, setData] = useState([])</code>
-                        </li>
-                        <li>Or add a guard before <code>.map()</code>: <code>data?.map(...)</code></li>
-                    </ol>
-                </div>
+                <div class="section-content" id="fix-text"></div>
             </div>
         </div>
 
@@ -60,11 +56,7 @@
         <div class="card slide-in" id="prevent-card">
             <div class="section">
                 <div class="section-title"><span class="icon">🛡️</span> How to Prevent</div>
-                <div class="section-content" id="prevent-text">
-                    Always initialize state variables with a sensible default value. If a variable will hold an array,
-                    initialize it as <code>[]</code>.
-                    This prevents <code>undefined</code> errors when your component renders before async data arrives.
-                </div>
+                <div class="section-content" id="prevent-text"></div>
             </div>
         </div>
 
@@ -72,12 +64,7 @@
         <div class="card slide-in" id="practices-card">
             <div class="section">
                 <div class="section-title"><span class="icon">⭐</span> Best Practices</div>
-                <div class="section-content" id="practices-text">
-                    Use optional chaining (<code>data?.map()</code>) and nullish coalescing (<code>data ?? []</code>) as
-                    defensive programming patterns.
-                    These are industry-standard approaches to safely handle values that might be <code>null</code> or
-                    <code>undefined</code>.
-                </div>
+                <div class="section-content" id="practices-text"></div>
             </div>
         </div>
 
@@ -85,8 +72,7 @@
         <div class="card slide-in" id="quiz-card">
             <div class="section">
                 <div class="section-title"><span class="icon">🧠</span> Test Yourself</div>
-                <p class="mb-8" id="quiz-question">Why does calling <code>.map()</code> on <code>data</code> throw a
-                    TypeError in this case?</p>
+                <p class="mb-8" id="quiz-question"></p>
                 <div class="quiz-options" id="quiz-options">
                     <!-- Options rendered by JS -->
                 </div>
@@ -94,8 +80,10 @@
             </div>
         </div>
 
+        </div><!-- close #error-content -->
+
         <!-- TTS Controls -->
-        <div class="mt-12" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <div class="mt-12" id="tts-controls" style="display: none; align-items: center; gap: 10px; flex-wrap: wrap;">
             <div
                 style="display: flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--vscode-input-border, rgba(127,127,127,0.25));">
                 <button class="btn voice-toggle active" id="voice-female"
@@ -113,6 +101,13 @@
         let quizAnswered = false;
         let currentErrorData = null;
 
+        // ── Helper: map quiz letter ("A"/"B"/"C"/"D") to 0-indexed number ──
+        function quizCorrectIndex(val) {
+            if (typeof val === 'number') return val;
+            const map = { A: 0, B: 1, C: 2, D: 3 };
+            return map[val] ?? 0;
+        }
+
         // ── Main Update Function ──
         function updatePanel(data) {
             currentErrorData = data;
@@ -121,26 +116,34 @@
             // 1. Header & Location
             document.getElementById('category-badge').textContent = data.category;
             document.getElementById('category-badge').className = 'badge badge--' + data.category.toLowerCase().replace(/\s+/g, '-');
-            document.getElementById('error-location').textContent = data.location;
-            document.getElementById('error-message').textContent = data.errorMessage;
+            document.getElementById('error-location').textContent = data.location || (data.raw && data.raw.file + ':' + data.raw.line) || '';
+            // errorMessage may be top-level (mock) or nested under raw (real Gemini data)
+            const errorMsg = data.errorMessage || (data.raw && data.raw.message) || '';
+            document.getElementById('error-message').textContent = errorMsg;
 
             // 2. Content Sections
-            document.getElementById('explanation-text').innerHTML = data.explanation; // utilizing innerHTML for bolding if needed, or textContent
-            
-            // Fix List
-            const fixList = data.howToFix.map(step => `<li>${step}</li>`).join('');
-            document.getElementById('fix-text').innerHTML = `<ol style="padding-left: 18px; margin: 0;">${fixList}</ol>`;
+            document.getElementById('explanation-text').innerHTML = data.explanation;
 
-            document.getElementById('prevent-text').innerHTML = data.howToPrevent; // innerHTML for code tags
-            document.getElementById('practices-text').innerHTML = data.bestPractices;
+            // howToFix: may be an array (mock) or a string (Gemini)
+            const howToFix = data.howToFix;
+            if (Array.isArray(howToFix)) {
+                const fixList = howToFix.map(step => `<li>${step}</li>`).join('');
+                document.getElementById('fix-text').innerHTML = `<ol style="padding-left: 18px; margin: 0;">${fixList}</ol>`;
+            } else {
+                document.getElementById('fix-text').innerHTML = howToFix || '';
+            }
+
+            document.getElementById('prevent-text').innerHTML = data.howToPrevent || '';
+            document.getElementById('practices-text').innerHTML = data.bestPractices || '';
 
             // 3. Quiz
             const quizCard = document.getElementById('quiz-card');
             if (data.quiz) {
+                const correctIdx = quizCorrectIndex(data.quiz.correct);
                 quizCard.style.display = 'block';
                 document.getElementById('quiz-question').innerHTML = data.quiz.question;
                 const quizOptions = document.getElementById('quiz-options');
-                quizOptions.innerHTML = ''; // clear old options
+                quizOptions.innerHTML = '';
                 document.getElementById('quiz-feedback').style.display = 'none';
 
                 data.quiz.options.forEach((option, index) => {
@@ -152,30 +155,27 @@
                         if (quizAnswered) return;
                         quizAnswered = true;
 
-                        // Disable all
                         document.querySelectorAll('.quiz-option').forEach((el, i) => {
                             el.setAttribute('data-answered', 'true');
                             el.style.pointerEvents = 'none';
-                            if (i === data.quiz.correct) {
+                            if (i === correctIdx) {
                                 el.classList.add('correct');
-                            } else if (i === index && i !== data.quiz.correct) {
+                            } else if (i === index && i !== correctIdx) {
                                 el.classList.add('incorrect');
                             } else {
                                 el.style.opacity = '0.5';
                             }
                         });
 
-                        // Feedback
-                        const isCorrect = index === data.quiz.correct;
+                        const isCorrect = index === correctIdx;
                         const fb = document.getElementById('quiz-feedback');
                         fb.className = 'quiz-feedback ' + (isCorrect ? 'correct' : 'incorrect');
-                        fb.textContent = isCorrect 
-                            ? '✅ ' + data.quiz.explanation 
+                        fb.textContent = isCorrect
+                            ? '✅ ' + data.quiz.explanation
                             : '❌ Not quite. ' + data.quiz.explanation;
                         fb.style.display = 'block';
-                        
-                        // Notify extension if needed
-                         if (window.vscode) {
+
+                        if (window.vscode) {
                             window.vscode.postMessage({ type: 'quizAnswer', correct: isCorrect });
                         }
                     });
@@ -184,13 +184,11 @@
             } else {
                 quizCard.style.display = 'none';
             }
-            
-            // Show content (in case it was hidden)
-            document.getElementById('location-card').style.display = 'block';
-            document.getElementById('explanation-card').style.display = 'block';
-            document.getElementById('fix-card').style.display = 'block';
-            document.getElementById('prevent-card').style.display = 'block';
-            document.getElementById('practices-card').style.display = 'block';
+
+            // Show content, hide empty state
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('error-content').style.display = 'block';
+            document.getElementById('tts-controls').style.display = 'flex';
         }
 
         // ── VS Code Integration ──
@@ -240,8 +238,8 @@
         if (!vscode) {
             updatePanel(MOCK_ERROR_DATA);
         } else {
-             // In VS Code, we wait for a message. Optionally show a "Waiting..." state or keeping empty.
-             // But for now, let's just do nothing and let the extension push data.
+            // Signal that the webview is ready to receive messages
+            vscode.postMessage({ type: 'ready' });
         }
 
         // ── ElevenLabs TTS — Fine-Tuned Natural Voice ──
@@ -304,10 +302,11 @@
 
             // Gather and clean explanation text
             const data = currentErrorData || MOCK_ERROR_DATA;
+            const fixText = Array.isArray(data.howToFix) ? data.howToFix.join('. ') : (data.howToFix || '');
             const textToRead = cleanTextForTTS([
                 data.explanation,
-                'Here is how to fix it. ' + (Array.isArray(data.howToFix) ? data.howToFix.join('. ') : data.howToFix),
-                'To prevent this in the future: ' + data.howToPrevent,
+                'Here is how to fix it. ' + fixText,
+                'To prevent this in the future: ' + (data.howToPrevent || ''),
             ].join('. '));
 
             // Use API key from config.js, fall back to browser speech

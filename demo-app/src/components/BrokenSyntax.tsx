@@ -27,5 +27,5 @@ export default function GreetingCard() {
         </div>
       )}
     </div>
-  // BUG: missing closing parenthesis for return statement
+  )
 }

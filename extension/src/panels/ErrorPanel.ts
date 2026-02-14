@@ -9,6 +9,7 @@ export class ErrorPanelProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private onMessageEmitter = new vscode.EventEmitter<WebviewToExtMessage>();
   readonly onMessage = this.onMessageEmitter.event;
+  private pendingMessage?: ExtToWebviewMessage;
 
   constructor(private readonly extensionUri: vscode.Uri) {}
 
@@ -27,6 +28,10 @@ export class ErrorPanelProvider implements vscode.WebviewViewProvider {
     webviewView.webview.html = this.getHtml(webviewView.webview);
 
     webviewView.webview.onDidReceiveMessage((msg: WebviewToExtMessage) => {
+      if (msg.type === "ready" && this.pendingMessage) {
+        webviewView.webview.postMessage(this.pendingMessage);
+        console.log(`${LOG} replayed pending message`);
+      }
       this.onMessageEmitter.fire(msg);
     });
 
@@ -34,6 +39,7 @@ export class ErrorPanelProvider implements vscode.WebviewViewProvider {
   }
 
   postMessage(message: ExtToWebviewMessage): void {
+    this.pendingMessage = message;
     if (this.view) {
       this.view.webview.postMessage(message);
       this.view.show?.(true);

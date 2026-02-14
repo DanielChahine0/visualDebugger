@@ -62,11 +62,20 @@
             <h1>📝 AI Fix Review</h1>
         </div>
 
+        <!-- Empty state — shown before any diff is detected -->
+        <div id="empty-state" class="card" style="text-align: center; padding: 32px 16px; opacity: 0.7;">
+            <p style="font-size: 1.1em; margin-bottom: 8px;">No AI fixes to review yet.</p>
+            <p class="text-muted text-sm">After an error is detected, use an AI tool (Copilot, Cursor, etc.) to fix it. Visual Debugger will explain the changes.</p>
+        </div>
+
+        <!-- Diff content — hidden until a diff is received -->
+        <div id="diff-content" style="display: none;">
+
         <!-- Diff Render Container -->
         <div class="card slide-in" id="diff-container">
             <div class="card-header">
-                <span class="badge badge--runtime" id="diff-category-badge">Runtime Error</span>
-                <span class="text-muted text-sm" id="diff-file">App.tsx</span>
+                <span class="badge" id="diff-category-badge"></span>
+                <span class="text-muted text-sm" id="diff-file"></span>
             </div>
             <div id="diff-output">
                 <!-- diff2html renders here -->
@@ -77,34 +86,24 @@
         <div class="card slide-in diff-explanation" id="explanation-card">
             <div class="section">
                 <div class="section-title"><span class="icon">🤖</span> What the AI Changed</div>
-                <div class="section-content" id="what-changed">
-                    The AI added a null check on line 15 before calling <code>.map()</code> and initialized the
-                    <code>data</code> state with an empty array <code>[]</code> instead of leaving it as
-                    <code>undefined</code>.
-                </div>
+                <div class="section-content" id="what-changed"></div>
             </div>
 
             <div class="section mt-12">
                 <div class="section-title"><span class="icon">🎯</span> Why This Fixes It</div>
-                <div class="section-content" id="why-fixes">
-                    The original code assumed <code>data</code> was always an array, but before the API response
-                    arrives, <code>data</code> is <code>undefined</code>.
-                    By initializing it as <code>[]</code>, <code>.map()</code> now has a valid (empty) array to iterate
-                    over. The optional chaining (<code>data?.map()</code>) adds an extra safety net.
-                </div>
+                <div class="section-content" id="why-fixes"></div>
             </div>
 
             <div class="section mt-12">
                 <div class="section-title"><span class="icon">💡</span> Key Takeaway</div>
-                <div class="section-content" id="key-takeaway" style="font-weight: 500; font-style: italic;">
-                    Always initialize state with a default value that matches the expected type — arrays as
-                    <code>[]</code>, objects as <code>{}</code>, strings as <code>""</code>.
-                </div>
+                <div class="section-content" id="key-takeaway" style="font-weight: 500; font-style: italic;"></div>
             </div>
         </div>
 
+        </div><!-- close #diff-content -->
+
         <!-- TTS Controls -->
-        <div class="mt-12" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <div class="mt-12" id="tts-controls" style="display: none; align-items: center; gap: 10px; flex-wrap: wrap;">
             <div
                 style="display: flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--vscode-input-border, rgba(127,127,127,0.25));">
                 <button class="btn voice-toggle active" id="voice-female"
@@ -144,20 +143,27 @@
         function updatePanel(data) {
             currentDiffData = data;
 
+            // Diff data may be at top level (mock) or nested under data.diff (real)
+            const diffStr = data.unifiedDiff || (data.diff && data.diff.unifiedDiff) || '';
+            const fileName = data.fileName || (data.diff && data.diff.file) || '';
+            const category = data.category || '';
+
             // Render Diff
-            renderDiff(data.unifiedDiff);
+            renderDiff(diffStr);
 
             // Render Text Content
-            document.getElementById('diff-category-badge').textContent = data.category;
-            // Handle badge color mapping if needed, similar to error.html
-            document.getElementById('diff-file').textContent = data.fileName;
-            document.getElementById('what-changed').innerHTML = data.whatChanged;
-            document.getElementById('why-fixes').innerHTML = data.whyItFixes;
-            document.getElementById('key-takeaway').innerHTML = data.keyTakeaway;
-            
-            // Show content
+            if (category) {
+                document.getElementById('diff-category-badge').textContent = category;
+            }
+            document.getElementById('diff-file').textContent = fileName;
+            document.getElementById('what-changed').innerHTML = data.whatChanged || '';
+            document.getElementById('why-fixes').innerHTML = data.whyItFixes || '';
+            document.getElementById('key-takeaway').innerHTML = data.keyTakeaway || '';
+
+            // Show content, hide empty state
             document.getElementById('empty-state').style.display = 'none';
             document.getElementById('diff-content').style.display = 'block';
+            document.getElementById('tts-controls').style.display = 'flex';
         }
 
         // ── Render diff using diff2html ──
@@ -209,6 +215,9 @@
         // If in browser (no vscode), load mock data immediately for preview
         if (!vscode) {
             updatePanel(MOCK_DIFF_DATA);
+        } else {
+            // Signal that the webview is ready to receive messages
+            vscode.postMessage({ type: 'ready' });
         }
 
         // ── ElevenLabs TTS — Fine-Tuned Natural Voice ──
