@@ -25,6 +25,32 @@
     --ff-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
     --ff-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
     --ff-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.2), 0 6px 10px rgba(0, 0, 0, 0.12);
+
+    /* Color-blind safe accents (distinguishable under all CVD types) */
+    --ff-accent-summary: #3b82f6;
+    --ff-accent-why: #0d9488;
+    --ff-accent-takeaway: #d97706;
+    --ff-accent-question: #7c3aed;
+}
+
+/* ── Accessibility: Reduced Motion ────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ── Accessibility: Focus Visible ─────────────────────────── */
+*:focus-visible {
+    outline: 2px solid var(--vscode-focusBorder, #007acc);
+    outline-offset: 2px;
+    border-radius: 2px;
 }
 
 body {
@@ -990,4 +1016,319 @@ code:hover {
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
     border: 0;
+}
+
+/* ================================================================
+   Diff Panel v2 — Accessibility-First Explanation UI
+   Designed for learners with ADHD and learning disabilities.
+   Color-blind safe, keyboard navigable, reduced-motion aware.
+   ================================================================ */
+
+/* ── Layout ─────────────────────────────────────────────── */
+.ff-panel {
+    max-width: 580px;
+    margin: 0 auto;
+    padding: 8px 4px;
+}
+
+/* ── Empty State ────────────────────────────────────────── */
+.ff-empty {
+    text-align: center;
+    padding: 48px 20px;
+}
+
+.ff-empty-icon {
+    font-size: 2.8em;
+    margin-bottom: 16px;
+    line-height: 1;
+}
+
+.ff-empty-heading {
+    font-size: 1.3em;
+    font-weight: 700;
+    color: var(--vscode-foreground);
+    margin-bottom: 10px;
+}
+
+.ff-empty-body {
+    font-size: 0.95em;
+    line-height: 1.7;
+    color: var(--vscode-descriptionForeground);
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+/* ── File Context Bar ───────────────────────────────────── */
+.ff-file-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    background: var(--vscode-textCodeBlock-background, rgba(127, 127, 127, 0.1));
+    border: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.15));
+}
+
+.ff-file-name {
+    font-family: var(--vscode-editor-font-family, 'Consolas', monospace);
+    font-size: 0.85em;
+    color: var(--vscode-descriptionForeground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Section Base ───────────────────────────────────────── */
+.ff-section {
+    margin-bottom: 22px;
+    padding: 16px;
+    padding-left: 18px;
+    border-left: 3px solid transparent;
+    border-radius: 0 8px 8px 0;
+    background: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+    border-top: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.12));
+    border-right: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.12));
+    border-bottom: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.12));
+    transition: border-color var(--ff-transition-med), box-shadow var(--ff-transition-med);
+}
+
+.ff-section:focus-within {
+    box-shadow: var(--ff-shadow-sm);
+}
+
+/* Staggered entrance */
+.ff-section {
+    animation: ffSlideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.ff-section:nth-child(2) { animation-delay: 0.04s; }
+.ff-section:nth-child(3) { animation-delay: 0.08s; }
+.ff-section:nth-child(4) { animation-delay: 0.12s; }
+.ff-section:nth-child(5) { animation-delay: 0.16s; }
+.ff-section:nth-child(6) { animation-delay: 0.20s; }
+
+@keyframes ffSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Section Accent Colors (color-blind safe) ───────────── */
+.ff-section--summary {
+    border-left-color: var(--ff-accent-summary);
+}
+
+.ff-section--why {
+    border-left-color: var(--ff-accent-why);
+}
+
+.ff-section--todo {
+    border-left-color: var(--vscode-foreground, #ccc);
+    border-left-style: dashed;
+}
+
+.ff-section--takeaway {
+    border-left-color: var(--ff-accent-takeaway);
+}
+
+.ff-section--question {
+    border-left-color: var(--ff-accent-question);
+}
+
+/* ── Headings ───────────────────────────────────────────── */
+.ff-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1em;
+    font-weight: 700;
+    color: var(--vscode-foreground);
+    margin-bottom: 10px;
+    letter-spacing: 0.2px;
+}
+
+.ff-icon {
+    font-size: 1.15em;
+    flex-shrink: 0;
+}
+
+/* ── Body Text ──────────────────────────────────────────── */
+.ff-body {
+    font-size: 0.95em;
+    line-height: 1.75;
+    color: var(--vscode-foreground);
+}
+
+/* ── Checklist ──────────────────────────────────────────── */
+.ff-checklist {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ff-check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 6px;
+    border-radius: 6px;
+    transition: background var(--ff-transition-fast);
+    min-height: 40px;
+}
+
+.ff-check-item:hover {
+    background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.08));
+}
+
+.ff-checkbox {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: var(--ff-accent-summary);
+}
+
+.ff-check-label {
+    font-size: 0.93em;
+    line-height: 1.6;
+    color: var(--vscode-foreground);
+    cursor: pointer;
+    transition: opacity var(--ff-transition-fast);
+}
+
+.ff-checkbox:checked+.ff-check-label {
+    text-decoration: line-through;
+    opacity: 0.55;
+}
+
+.ff-check-done {
+    font-size: 0.88em;
+    font-weight: 600;
+    color: var(--ff-accent-summary);
+    padding: 6px 0 0;
+    animation: ffFadeIn 0.3s ease;
+}
+
+@keyframes ffFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ── Callout (Key Takeaway) ─────────────────────────────── */
+.ff-callout {
+    font-size: 1em;
+    font-style: italic;
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--vscode-foreground);
+    padding: 12px 14px;
+    border-radius: 6px;
+    background: rgba(217, 119, 6, 0.08);
+    border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+/* ── Question ───────────────────────────────────────────── */
+.ff-question {
+    font-size: 1em;
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--vscode-foreground);
+}
+
+/* ── TTS Controls ───────────────────────────────────────── */
+.ff-tts-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    margin-top: 4px;
+    border-top: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.12));
+}
+
+.ff-voice-group {
+    display: flex;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--vscode-input-border, rgba(127, 127, 127, 0.25));
+}
+
+.ff-voice-btn {
+    padding: 6px 12px;
+    font-size: 0.85em;
+    font-family: inherit;
+    border: none;
+    background: var(--vscode-input-background, rgba(127, 127, 127, 0.1));
+    color: var(--vscode-descriptionForeground);
+    cursor: pointer;
+    transition: background var(--ff-transition-fast), color var(--ff-transition-fast);
+    min-height: 32px;
+}
+
+.ff-voice-btn:not(:first-child) {
+    border-left: 1px solid var(--vscode-input-border, rgba(127, 127, 127, 0.25));
+}
+
+.ff-voice-btn:hover {
+    background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.15));
+    color: var(--vscode-foreground);
+}
+
+.ff-voice-btn.active {
+    background: var(--vscode-button-background, #0078d4);
+    color: var(--vscode-button-foreground, #fff);
+}
+
+.ff-btn--tts {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-family: inherit;
+    cursor: pointer;
+    background: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    transition: opacity var(--ff-transition-fast);
+    min-height: 32px;
+}
+
+.ff-btn--tts:hover {
+    opacity: 0.85;
+}
+
+.ff-btn--playing {
+    animation: ttsGlow 1.5s ease-in-out infinite;
+}
+
+/* ── Responsive: Narrow widths ──────────────────────────── */
+@media (max-width: 360px) {
+    .ff-panel {
+        padding: 4px 0;
+    }
+
+    .ff-section {
+        padding: 12px;
+        padding-left: 14px;
+        margin-bottom: 16px;
+    }
+
+    .ff-tts-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ff-voice-group {
+        align-self: flex-start;
+    }
 }
