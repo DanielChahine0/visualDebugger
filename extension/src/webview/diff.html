@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Fix Review — FlowFixer</title>
+    <link rel="stylesheet" href="styles.css" />
+    <!-- diff2html CSS (CDN for browser preview; will be bundled by esbuild later) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html@3.4.48/bundles/css/diff2html.min.css" />
+    <style>
+        /* diff2html theme overrides for VS Code compatibility */
+        .d2h-wrapper {
+            background: transparent !important;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .d2h-file-header {
+            background: var(--vscode-editorGroupHeader-tabsBackground, #252526) !important;
+            color: var(--vscode-foreground) !important;
+            border-bottom: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.2)) !important;
+        }
+
+        .d2h-file-wrapper {
+            border: 1px solid var(--vscode-widget-border, rgba(127, 127, 127, 0.2)) !important;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .d2h-code-linenumber,
+        .d2h-code-line-ctn {
+            font-family: var(--vscode-editor-font-family, 'Consolas', monospace) !important;
+            font-size: var(--vscode-editor-font-size, 13px) !important;
+        }
+
+        /* Green for additions */
+        .d2h-ins {
+            background: rgba(76, 175, 80, 0.15) !important;
+        }
+
+        .d2h-ins .d2h-code-line-ctn {
+            background: rgba(76, 175, 80, 0.08) !important;
+        }
+
+        /* Red for deletions */
+        .d2h-del {
+            background: rgba(255, 85, 85, 0.15) !important;
+        }
+
+        .d2h-del .d2h-code-line-ctn {
+            background: rgba(255, 85, 85, 0.08) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="diff-panel">
+        <!-- Header -->
+        <div class="card-header">
+            <h1>📝 AI Fix Review</h1>
+        </div>
+
+        <!-- Diff Render Container -->
+        <div class="card slide-in" id="diff-container">
+            <div class="card-header">
+                <span class="badge badge--runtime" id="diff-category-badge">Runtime Error</span>
+                <span class="text-muted text-sm" id="diff-file">App.tsx</span>
+            </div>
+            <div id="diff-output">
+                <!-- diff2html renders here -->
+            </div>
+        </div>
+
+        <!-- AI Explanation Card ("Why It Broke") -->
+        <div class="card slide-in diff-explanation" id="explanation-card">
+            <div class="section">
+                <div class="section-title"><span class="icon">🤖</span> What the AI Changed</div>
+                <div class="section-content" id="what-changed">
+                    The AI added a null check on line 15 before calling <code>.map()</code> and initialized the
+                    <code>data</code> state with an empty array <code>[]</code> instead of leaving it as
+                    <code>undefined</code>.
+                </div>
+            </div>
+
+            <div class="section mt-12">
+                <div class="section-title"><span class="icon">🎯</span> Why This Fixes It</div>
+                <div class="section-content" id="why-fixes">
+                    The original code assumed <code>data</code> was always an array, but before the API response
+                    arrives, <code>data</code> is <code>undefined</code>.
+                    By initializing it as <code>[]</code>, <code>.map()</code> now has a valid (empty) array to iterate
+                    over. The optional chaining (<code>data?.map()</code>) adds an extra safety net.
+                </div>
+            </div>
+
+            <div class="section mt-12">
+                <div class="section-title"><span class="icon">💡</span> Key Takeaway</div>
+                <div class="section-content" id="key-takeaway" style="font-weight: 500; font-style: italic;">
+                    Always initialize state with a default value that matches the expected type — arrays as
+                    <code>[]</code>, objects as <code>{}</code>, strings as <code>""</code>.
+                </div>
+            </div>
+        </div>
+
+        <!-- TTS Button -->
+        <div class="mt-12">
+            <button class="btn btn--secondary" id="tts-btn">🔊 Read Aloud</button>
+        </div>
+    </div>
+
+    <!-- diff2html JS (CDN for browser preview) -->
+    <script src="https://cdn.jsdelivr.net/npm/diff2html@3.4.48/bundles/js/diff2html.min.js"></script>
+    <script>
+        // ================================================================
+        // DATA CONTRACT — This is the shape Engineer 1 will send
+        // via postMessage from panels/DiffPanel.ts
+        //
+        // The unified diff string comes from diffEngine.ts (Engineer 1).
+        // The explanation JSON comes from llmClient.ts (Engineer 3).
+        // ================================================================
+        const MOCK_DIFF_DATA = {
+            category: "Runtime Error",
+            fileName: "App.tsx",
+            unifiedDiff: `--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -12,8 +12,8 @@
+ import { useState, useEffect } from 'react';
+ 
+ function App() {
+-  const [data, setData] = useState();
++  const [data, setData] = useState([]);
+ 
+   useEffect(() => {
+     fetch('/api/items')
+@@ -22,7 +22,7 @@
+   }, []);
+ 
+   return (
+-    <ul>{data.map(item => (
++    <ul>{data?.map(item => (
+       <li key={item.id}>{item.name}</li>
+     ))}</ul>
+   );`,
+            whatChanged: "The AI added a null check on line 15 before calling .map() and initialized the data state with an empty array [] instead of leaving it as undefined.",
+            whyItFixes: "The original code assumed 'data' was always an array, but before the API response arrives, 'data' is undefined. By initializing it as [], .map() now has a valid (empty) array to iterate over. The optional chaining (data?.map()) adds an extra safety net.",
+            keyTakeaway: "Always initialize state with a default value that matches the expected type — arrays as [], objects as {}, strings as ''."
+        };
+
+        // ── Render diff using diff2html ──
+        function renderDiff(diffString) {
+            const diffOutput = document.getElementById('diff-output');
+            if (typeof Diff2Html !== 'undefined') {
+                diffOutput.innerHTML = Diff2Html.html(diffString, {
+                    drawFileList: false,
+                    matching: 'lines',
+                    outputFormat: 'side-by-side',
+                    renderNothingWhenEmpty: false
+                });
+            } else {
+                // Fallback: show raw diff in a pre tag
+                diffOutput.innerHTML = '<pre style="padding: 12px; overflow-x: auto;"><code>' +
+                    diffString.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code></pre>';
+            }
+        }
+
+        // Initial render with mock data
+        renderDiff(MOCK_DIFF_DATA.unifiedDiff);
+
+        // ── Message Listener (for VS Code integration) ──
+        // Engineer 1 will send messages from panels/DiffPanel.ts
+        // Uncomment below when integrating:
+        // const vscode = acquireVsCodeApi();
+        // window.addEventListener('message', (event) => {
+        //   const { type, payload } = event.data;
+        //   if (type === 'showDiff') {
+        //     renderDiff(payload.unifiedDiff);
+        //     document.getElementById('what-changed').textContent = payload.whatChanged;
+        //     document.getElementById('why-fixes').textContent = payload.whyItFixes;
+        //     document.getElementById('key-takeaway').textContent = payload.keyTakeaway;
+        //     document.getElementById('diff-category-badge').textContent = payload.category;
+        //     document.getElementById('diff-file').textContent = payload.fileName;
+        //   }
+        // });
+
+        // ── TTS Button — ElevenLabs Integration ──
+        const ttsBtn = document.getElementById('tts-btn');
+        let ttsAudio = null;
+        let isSpeaking = false;
+
+        ttsBtn.addEventListener('click', async () => {
+            if (isSpeaking && ttsAudio) {
+                ttsAudio.pause(); ttsAudio = null; isSpeaking = false;
+                ttsBtn.textContent = '🔊 Read Aloud'; return;
+            }
+            const textToRead = MOCK_DIFF_DATA.whatChanged + '. ' + MOCK_DIFF_DATA.whyItFixes + '. Key takeaway: ' + MOCK_DIFF_DATA.keyTakeaway;
+            let apiKey = sessionStorage.getItem('elevenlabs_key');
+            if (!apiKey) {
+                apiKey = prompt('Enter your ElevenLabs API key (or cancel for browser TTS):');
+                if (apiKey) sessionStorage.setItem('elevenlabs_key', apiKey);
+            }
+            ttsBtn.textContent = '⏳ Loading...';
+            if (apiKey) {
+                try {
+                    const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'xi-api-key': apiKey },
+                        body: JSON.stringify({ text: textToRead, model_id: 'eleven_monolingual_v1', voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
+                    });
+                    if (!res.ok) throw new Error('API error ' + res.status);
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    ttsAudio = new Audio(url);
+                    isSpeaking = true; ttsBtn.textContent = '⏹️ Stop';
+                    ttsAudio.onended = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; URL.revokeObjectURL(url); };
+                    ttsAudio.play(); return;
+                } catch (e) { console.warn('ElevenLabs failed, falling back:', e); }
+            }
+            if ('speechSynthesis' in window) {
+                const u = new SpeechSynthesisUtterance(textToRead); u.rate = 0.95;
+                isSpeaking = true; ttsBtn.textContent = '⏹️ Stop';
+                u.onend = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; };
+                speechSynthesis.speak(u);
+            } else { ttsBtn.textContent = '🔊 Read Aloud'; alert('TTS not available.'); }
+        });
+    </script>
+</body>
+
+</html>

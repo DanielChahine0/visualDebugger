@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bug Dashboard — FlowFixer</title>
+    <link rel="stylesheet" href="styles.css" />
+    <!-- Chart.js v4 (CDN for browser preview; will be bundled by esbuild later) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+    <div id="dashboard-panel">
+        <!-- Header -->
+        <div class="card-header">
+            <h1>📊 Bug Dashboard</h1>
+            <span class="text-muted text-sm">Your debugging journey at a glance</span>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Summary Stats -->
+            <div class="card slide-in" id="stats-card">
+                <div style="display: flex; justify-content: space-around; text-align: center;">
+                    <div>
+                        <div style="font-size: 1.8em; font-weight: 700; color: var(--vscode-foreground);"
+                            id="total-bugs">0</div>
+                        <div class="text-muted text-sm">Total Bugs</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.8em; font-weight: 700; color: #ffaa00;" id="syntax-count">0</div>
+                        <div class="text-muted text-sm">Syntax</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.8em; font-weight: 700; color: #00a2ff;" id="logic-count">0</div>
+                        <div class="text-muted text-sm">Logic</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.8em; font-weight: 700; color: #ff5555;" id="runtime-count">0</div>
+                        <div class="text-muted text-sm">Runtime</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Breakdown (Bar Chart) -->
+            <div class="card slide-in">
+                <h3 class="mb-8">Bug Categories</h3>
+                <div class="chart-container">
+                    <canvas id="category-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Trend Over Time (Line Chart) -->
+            <div class="card slide-in">
+                <h3 class="mb-8">Bug Trend (Last 7 Days)</h3>
+                <div class="chart-container">
+                    <canvas id="trend-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Focus Area Recommendation -->
+            <div class="focus-area slide-in" id="focus-area">
+                <h3>🎯 Focus Area</h3>
+                <p id="focus-text">Loading...</p>
+            </div>
+
+            <!-- Recent Bug History -->
+            <div class="card slide-in">
+                <h3 class="mb-8">Recent Bugs</h3>
+                <div id="bug-history" style="max-height: 250px; overflow-y: auto;">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        // SEED DATA — 18 realistic bug entries simulating a week of student coding.
+        // This data will come from seedData.ts (my file) and storage.ts (Eng 1).
+        //
+        // In production, Engineer 1's panels/DashboardPanel.ts will send:
+        //   panel.webview.postMessage({ type: 'updateDashboard', payload: {...} })
+        // ================================================================
+        const SEED_BUGS = [
+            { id: 1, category: "Runtime", error: "TypeError: Cannot read properties of undefined (reading 'map')", file: "App.tsx", line: 15, timestamp: "2026-02-07T09:15:00Z" },
+            { id: 2, category: "Syntax", error: "SyntaxError: Unexpected token '}'", file: "Header.tsx", line: 23, timestamp: "2026-02-07T10:30:00Z" },
+            { id: 3, category: "Logic", error: "Off-by-one: renders extra undefined item in list", file: "List.tsx", line: 8, timestamp: "2026-02-07T14:45:00Z" },
+            { id: 4, category: "Runtime", error: "ReferenceError: data is not defined", file: "Dashboard.tsx", line: 42, timestamp: "2026-02-08T08:20:00Z" },
+            { id: 5, category: "Syntax", error: "SyntaxError: Unexpected token, expected ','", file: "Form.tsx", line: 31, timestamp: "2026-02-08T11:10:00Z" },
+            { id: 6, category: "Runtime", error: "TypeError: setItems is not a function", file: "App.tsx", line: 20, timestamp: "2026-02-08T15:00:00Z" },
+            { id: 7, category: "Logic", error: "Counter increments by 2 instead of 1", file: "Counter.tsx", line: 12, timestamp: "2026-02-09T09:30:00Z" },
+            { id: 8, category: "Runtime", error: "TypeError: Cannot destructure property 'name' of undefined", file: "Profile.tsx", line: 7, timestamp: "2026-02-09T13:15:00Z" },
+            { id: 9, category: "Syntax", error: "SyntaxError: Missing semicolon", file: "utils.ts", line: 45, timestamp: "2026-02-09T16:40:00Z" },
+            { id: 10, category: "Runtime", error: "TypeError: fetch is not a function", file: "api.ts", line: 3, timestamp: "2026-02-10T10:00:00Z" },
+            { id: 11, category: "Logic", error: "Form submits even when validation fails", file: "Form.tsx", line: 55, timestamp: "2026-02-10T11:25:00Z" },
+            { id: 12, category: "Runtime", error: "RangeError: Maximum call stack size exceeded", file: "Tree.tsx", line: 18, timestamp: "2026-02-10T14:50:00Z" },
+            { id: 13, category: "Logic", error: "Search filter returns wrong results", file: "Search.tsx", line: 22, timestamp: "2026-02-11T09:10:00Z" },
+            { id: 14, category: "Runtime", error: "TypeError: Cannot read properties of null (reading 'value')", file: "Input.tsx", line: 9, timestamp: "2026-02-11T12:30:00Z" },
+            { id: 15, category: "Syntax", error: "SyntaxError: Unterminated string literal", file: "config.ts", line: 15, timestamp: "2026-02-12T08:45:00Z" },
+            { id: 16, category: "Runtime", error: "TypeError: Cannot read properties of undefined (reading 'length')", file: "Table.tsx", line: 30, timestamp: "2026-02-12T13:20:00Z" },
+            { id: 17, category: "Logic", error: "Pagination shows page 0 instead of page 1", file: "Pagination.tsx", line: 14, timestamp: "2026-02-13T10:00:00Z" },
+            { id: 18, category: "Runtime", error: "TypeError: items.filter is not a function", file: "Filter.tsx", line: 27, timestamp: "2026-02-13T15:30:00Z" }
+        ];
+
+        // ── Compute Stats ──
+        const syntaxCount = SEED_BUGS.filter(b => b.category === "Syntax").length;
+        const logicCount = SEED_BUGS.filter(b => b.category === "Logic").length;
+        const runtimeCount = SEED_BUGS.filter(b => b.category === "Runtime").length;
+
+        document.getElementById('total-bugs').textContent = SEED_BUGS.length;
+        document.getElementById('syntax-count').textContent = syntaxCount;
+        document.getElementById('logic-count').textContent = logicCount;
+        document.getElementById('runtime-count').textContent = runtimeCount;
+
+        // ── Focus Area ──
+        const highest = Math.max(syntaxCount, logicCount, runtimeCount);
+        let focusCategory = 'Runtime';
+        if (highest === syntaxCount) focusCategory = 'Syntax';
+        else if (highest === logicCount) focusCategory = 'Logic';
+
+        const focusAdvice = {
+            Syntax: 'Focus on syntax fundamentals — double-check brackets, parentheses, and semicolons before running.',
+            Logic: 'Focus on control flow — trace your conditions and loops manually before trusting the output.',
+            Runtime: 'Focus on defensive programming — always check for null/undefined before accessing properties.'
+        };
+        document.getElementById('focus-text').textContent =
+            `You struggle most with ${focusCategory} Errors (${highest} total). ${focusAdvice[focusCategory]}`;
+
+        // ── Category Bar Chart ──
+        const categoryCtx = document.getElementById('category-chart').getContext('2d');
+        new Chart(categoryCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Syntax Errors', 'Logic Errors', 'Runtime Errors'],
+                datasets: [{
+                    label: 'Count',
+                    data: [syntaxCount, logicCount, runtimeCount],
+                    backgroundColor: [
+                        'rgba(255, 170, 0, 0.6)',
+                        'rgba(0, 162, 255, 0.6)',
+                        'rgba(255, 85, 85, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 170, 0, 1)',
+                        'rgba(0, 162, 255, 1)',
+                        'rgba(255, 85, 85, 1)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, color: 'rgba(200,200,200,0.7)' },
+                        grid: { color: 'rgba(127,127,127,0.1)' }
+                    },
+                    x: {
+                        ticks: { color: 'rgba(200,200,200,0.7)' },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // ── Trend Line Chart ──
+        // Group bugs by day
+        const dayLabels = ['Feb 7', 'Feb 8', 'Feb 9', 'Feb 10', 'Feb 11', 'Feb 12', 'Feb 13'];
+        const dayBuckets = [7, 8, 9, 10, 11, 12, 13];
+        const syntaxByDay = dayBuckets.map(d => SEED_BUGS.filter(b => b.category === 'Syntax' && new Date(b.timestamp).getUTCDate() === d).length);
+        const logicByDay = dayBuckets.map(d => SEED_BUGS.filter(b => b.category === 'Logic' && new Date(b.timestamp).getUTCDate() === d).length);
+        const runtimeByDay = dayBuckets.map(d => SEED_BUGS.filter(b => b.category === 'Runtime' && new Date(b.timestamp).getUTCDate() === d).length);
+
+        const trendCtx = document.getElementById('trend-chart').getContext('2d');
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: dayLabels,
+                datasets: [
+                    {
+                        label: 'Syntax',
+                        data: syntaxByDay,
+                        borderColor: 'rgba(255, 170, 0, 1)',
+                        backgroundColor: 'rgba(255, 170, 0, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4
+                    },
+                    {
+                        label: 'Logic',
+                        data: logicByDay,
+                        borderColor: 'rgba(0, 162, 255, 1)',
+                        backgroundColor: 'rgba(0, 162, 255, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4
+                    },
+                    {
+                        label: 'Runtime',
+                        data: runtimeByDay,
+                        borderColor: 'rgba(255, 85, 85, 1)',
+                        backgroundColor: 'rgba(255, 85, 85, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: 'rgba(200,200,200,0.8)', usePointStyle: true, pointStyle: 'circle' }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1, color: 'rgba(200,200,200,0.7)' },
+                        grid: { color: 'rgba(127,127,127,0.1)' }
+                    },
+                    x: {
+                        ticks: { color: 'rgba(200,200,200,0.7)' },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // ── Bug History List ──
+        const historyEl = document.getElementById('bug-history');
+        const sortedBugs = [...SEED_BUGS].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        sortedBugs.forEach(bug => {
+            const badgeClass = bug.category === 'Syntax' ? 'badge--syntax'
+                : bug.category === 'Logic' ? 'badge--logic'
+                    : 'badge--runtime';
+            const dateStr = new Date(bug.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            historyEl.innerHTML += `
+        <div style="display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--vscode-widget-border, rgba(127,127,127,0.15));">
+          <span class="badge ${badgeClass}" style="flex-shrink: 0; font-size: 0.7em; margin-top: 2px;">${bug.category}</span>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 0.88em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${bug.error}">${bug.error}</div>
+            <div class="text-muted text-sm">${bug.file}:${bug.line} · ${dateStr}</div>
+          </div>
+        </div>`;
+        });
+
+        // ── Message Listener (for VS Code integration) ──
+        // Uncomment below when integrating:
+        // const vscode = acquireVsCodeApi();
+        // window.addEventListener('message', (event) => {
+        //   const { type, payload } = event.data;
+        //   if (type === 'updateDashboard') {
+        //     // Re-render charts with real data from storage.ts
+        //   }
+        // });
+    </script>
+</body>
+
+</html>

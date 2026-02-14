@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Error Explanation — FlowFixer</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <div id="error-panel">
+        <!-- Header with category badge -->
+        <div class="card-header">
+            <h1>🔍 Error Explanation</h1>
+        </div>
+
+        <!-- Error Location Card -->
+        <div class="card slide-in" id="location-card">
+            <div class="card-header">
+                <span class="badge badge--runtime" id="category-badge">Runtime Error</span>
+                <span class="text-muted text-sm" id="error-location">App.tsx, line 15</span>
+            </div>
+            <p id="error-message"
+                style="font-family: var(--vscode-editor-font-family, monospace); background: var(--vscode-textCodeBlock-background, rgba(127,127,127,0.1)); padding: 10px 14px; border-radius: 4px; font-size: 0.92em;">
+                TypeError: Cannot read properties of undefined (reading 'map')
+            </p>
+        </div>
+
+        <!-- What Happened -->
+        <div class="card slide-in" id="explanation-card">
+            <div class="section">
+                <div class="section-title"><span class="icon">💡</span> What Happened</div>
+                <div class="section-content" id="explanation-text">
+                    You're trying to call <code>.map()</code> on a variable called <code>data</code>, but
+                    <code>data</code> is <code>undefined</code>.
+                    This means the variable hasn't been assigned a value yet — likely because an API call hasn't
+                    finished loading when the component tries to render.
+                </div>
+            </div>
+        </div>
+
+        <!-- How to Fix -->
+        <div class="card slide-in" id="fix-card">
+            <div class="section">
+                <div class="section-title"><span class="icon">🔧</span> How to Fix</div>
+                <div class="section-content" id="fix-text">
+                    <ol style="padding-left: 18px; margin: 0;">
+                        <li>Go to <strong>line 15</strong> in <code>App.tsx</code></li>
+                        <li>Initialize your state with an empty array: <code>const [data, setData] = useState([])</code>
+                        </li>
+                        <li>Or add a guard before <code>.map()</code>: <code>data?.map(...)</code></li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- How to Prevent -->
+        <div class="card slide-in" id="prevent-card">
+            <div class="section">
+                <div class="section-title"><span class="icon">🛡️</span> How to Prevent</div>
+                <div class="section-content" id="prevent-text">
+                    Always initialize state variables with a sensible default value. If a variable will hold an array,
+                    initialize it as <code>[]</code>.
+                    This prevents <code>undefined</code> errors when your component renders before async data arrives.
+                </div>
+            </div>
+        </div>
+
+        <!-- Best Practices -->
+        <div class="card slide-in" id="practices-card">
+            <div class="section">
+                <div class="section-title"><span class="icon">⭐</span> Best Practices</div>
+                <div class="section-content" id="practices-text">
+                    Use optional chaining (<code>data?.map()</code>) and nullish coalescing (<code>data ?? []</code>) as
+                    defensive programming patterns.
+                    These are industry-standard approaches to safely handle values that might be <code>null</code> or
+                    <code>undefined</code>.
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Section -->
+        <div class="card slide-in" id="quiz-card">
+            <div class="section">
+                <div class="section-title"><span class="icon">🧠</span> Test Yourself</div>
+                <p class="mb-8" id="quiz-question">Why does calling <code>.map()</code> on <code>data</code> throw a
+                    TypeError in this case?</p>
+                <div class="quiz-options" id="quiz-options">
+                    <!-- Options rendered by JS -->
+                </div>
+                <div class="quiz-feedback" id="quiz-feedback" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- TTS Button -->
+        <div class="mt-12">
+            <button class="btn btn--secondary" id="tts-btn">🔊 Read Aloud</button>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        // DATA CONTRACT — This is the shape of data Engineer 1 will send
+        // via postMessage. For now, it is hardcoded for browser preview.
+        //
+        // In production, Engineer 1's panels/ErrorPanel.ts will send:
+        //   panel.webview.postMessage({ type: 'showError', payload: {...} })
+        //
+        // And this script will listen with:
+        //   window.addEventListener('message', (e) => { ... })
+        // ================================================================
+        const MOCK_ERROR_DATA = {
+            category: "Runtime Error",
+            location: "App.tsx, line 15",
+            errorMessage: "TypeError: Cannot read properties of undefined (reading 'map')",
+            explanation: "You're trying to call .map() on a variable called 'data', but 'data' is undefined. This means the variable hasn't been assigned a value yet — likely because an API call hasn't finished loading when the component tries to render.",
+            howToFix: [
+                "Go to line 15 in App.tsx",
+                "Initialize your state with an empty array: const [data, setData] = useState([])",
+                "Or add a guard before .map(): data?.map(...)"
+            ],
+            howToPrevent: "Always initialize state variables with a sensible default value. If a variable will hold an array, initialize it as []. This prevents undefined errors when your component renders before async data arrives.",
+            bestPractices: "Use optional chaining (data?.map()) and nullish coalescing (data ?? []) as defensive programming patterns. These are industry-standard approaches to safely handle values that might be null or undefined.",
+            quiz: {
+                question: "Why does calling .map() on 'data' throw a TypeError in this case?",
+                options: [
+                    "A) .map() is not a valid JavaScript method",
+                    "B) 'data' is undefined because the state wasn't initialized with a default value",
+                    "C) The API returned an error",
+                    "D) .map() only works on strings, not arrays"
+                ],
+                correct: 1, // B (0-indexed)
+                explanation: "Correct! The state variable 'data' was not given a default value (like []), so it starts as undefined. When React tries to render before the API data arrives, it calls .map() on undefined, which crashes."
+            }
+        };
+
+        // ── Quiz Logic ──
+        const quizOptions = document.getElementById('quiz-options');
+        const quizFeedback = document.getElementById('quiz-feedback');
+        let quizAnswered = false;
+
+        MOCK_ERROR_DATA.quiz.options.forEach((option, index) => {
+            const optionEl = document.createElement('div');
+            optionEl.className = 'quiz-option';
+            optionEl.textContent = option;
+            optionEl.addEventListener('click', () => {
+                if (quizAnswered) return;
+                quizAnswered = true;
+
+                // Mark all options
+                document.querySelectorAll('.quiz-option').forEach((el, i) => {
+                    if (i === MOCK_ERROR_DATA.quiz.correct) {
+                        el.classList.add('correct');
+                    } else if (i === index && i !== MOCK_ERROR_DATA.quiz.correct) {
+                        el.classList.add('incorrect');
+                    }
+                });
+
+                // Show feedback
+                const isCorrect = index === MOCK_ERROR_DATA.quiz.correct;
+                quizFeedback.className = 'quiz-feedback ' + (isCorrect ? 'correct' : 'incorrect');
+                quizFeedback.textContent = isCorrect
+                    ? '✅ ' + MOCK_ERROR_DATA.quiz.explanation
+                    : '❌ Not quite. ' + MOCK_ERROR_DATA.quiz.explanation;
+                quizFeedback.style.display = 'block';
+            });
+            quizOptions.appendChild(optionEl);
+        });
+
+        // ── Message Listener (for VS Code integration) ──
+        // Engineer 1 will send messages from panels/ErrorPanel.ts
+        // Uncomment below when integrating:
+        // const vscode = acquireVsCodeApi();
+        // window.addEventListener('message', (event) => {
+        //   const { type, payload } = event.data;
+        //   if (type === 'showError') {
+        //     updatePanel(payload);
+        //   }
+        // });
+
+        // ── TTS Button — ElevenLabs Integration ──
+        const ttsBtn = document.getElementById('tts-btn');
+        let ttsAudio = null;
+        let isSpeaking = false;
+
+        ttsBtn.addEventListener('click', async () => {
+            // Toggle off if already speaking
+            if (isSpeaking && ttsAudio) {
+                ttsAudio.pause();
+                ttsAudio = null;
+                isSpeaking = false;
+                ttsBtn.textContent = '🔊 Read Aloud';
+                return;
+            }
+
+            // Gather explanation text
+            const textToRead = [
+                MOCK_ERROR_DATA.explanation,
+                'How to fix it: ' + MOCK_ERROR_DATA.howToFix.join('. '),
+                'How to prevent it: ' + MOCK_ERROR_DATA.howToPrevent,
+            ].join('. ');
+
+            // Try ElevenLabs first, fall back to browser speech
+            let apiKey = sessionStorage.getItem('elevenlabs_key');
+            if (!apiKey) {
+                apiKey = prompt('Enter your ElevenLabs API key (or cancel for browser TTS):');
+                if (apiKey) sessionStorage.setItem('elevenlabs_key', apiKey);
+            }
+
+            ttsBtn.textContent = '⏳ Loading...';
+
+            if (apiKey) {
+                try {
+                    const voiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel
+                    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'xi-api-key': apiKey },
+                        body: JSON.stringify({
+                            text: textToRead,
+                            model_id: 'eleven_monolingual_v1',
+                            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+                        })
+                    });
+                    if (!res.ok) throw new Error('API error ' + res.status);
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    ttsAudio = new Audio(url);
+                    isSpeaking = true;
+                    ttsBtn.textContent = '⏹️ Stop';
+                    ttsAudio.onended = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; URL.revokeObjectURL(url); };
+                    ttsAudio.play();
+                    return;
+                } catch (e) {
+                    console.warn('ElevenLabs failed, falling back to browser TTS:', e);
+                }
+            }
+
+            // Fallback: browser SpeechSynthesis
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(textToRead);
+                utterance.rate = 0.95;
+                isSpeaking = true;
+                ttsBtn.textContent = '⏹️ Stop';
+                utterance.onend = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; };
+                speechSynthesis.speak(utterance);
+            } else {
+                ttsBtn.textContent = '🔊 Read Aloud';
+                alert('TTS not available in this browser.');
+            }
+        });
+    </script>
+</body>
+
+</html>
