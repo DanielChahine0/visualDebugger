@@ -9,7 +9,9 @@
       "Bash(npm run package:*)",
       "Bash(npx vitest run)",
       "Bash(npx vsce:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(cd:*)",
+      "Bash(git add:*)"
     ]
   }
 }
