@@ -11,6 +11,9 @@
 
 <body>
     <div id="diff-panel" class="ff-panel" role="main" aria-label="Fix explanation">
+        <!-- Skip link for keyboard/screen-reader users -->
+        <a href="#section-todo" class="sr-only sr-only--focusable">Skip to action items</a>
+
         <!-- Screen-reader live region -->
         <div id="status-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
@@ -29,6 +32,7 @@
 
             <!-- File context -->
             <div class="ff-file-bar" id="file-bar" style="display: none;" aria-label="File changed">
+                <span class="ff-file-icon" aria-hidden="true">📄</span>
                 <span class="ff-file-name" id="diff-file"></span>
             </div>
 
@@ -37,22 +41,27 @@
                 aria-labelledby="heading-summary" style="display: none;">
                 <h2 id="heading-summary" class="ff-heading">
                     <span class="ff-icon" aria-hidden="true">📝</span>
-                    What Changed
+                    Quick Summary
                 </h2>
                 <p class="ff-body" id="quick-summary"></p>
             </section>
 
-            <!-- 2. Why It Works -->
+            <!-- 2. Why This Fixes It (progressive disclosure) -->
             <section class="ff-section ff-section--why" id="section-why"
                 aria-labelledby="heading-why" style="display: none;">
-                <h2 id="heading-why" class="ff-heading">
-                    <span class="ff-icon" aria-hidden="true">💡</span>
-                    Why It Works
-                </h2>
-                <p class="ff-body" id="why-it-works"></p>
+                <details class="ff-disclosure">
+                    <summary class="ff-disclosure-trigger" id="heading-why">
+                        <span class="ff-icon" aria-hidden="true">💡</span>
+                        <span class="ff-disclosure-title">Why This Fixes It</span>
+                        <span class="ff-disclosure-hint" aria-hidden="true">Show details</span>
+                    </summary>
+                    <div class="ff-disclosure-body">
+                        <p class="ff-body" id="why-it-works"></p>
+                    </div>
+                </details>
             </section>
 
-            <!-- 3. What To Do Next -->
+            <!-- 3. What To Do Next (sticky card) -->
             <section class="ff-section ff-section--todo" id="section-todo"
                 aria-labelledby="heading-todo" style="display: none;">
                 <h2 id="heading-todo" class="ff-heading">
@@ -60,7 +69,7 @@
                     What To Do Next
                 </h2>
                 <ul class="ff-checklist" id="what-to-do-next" role="list"
-                    aria-label="Steps to verify the fix"></ul>
+                    aria-label="Steps to check the fix"></ul>
                 <p class="ff-check-done" id="check-done" style="display: none;" aria-live="polite">
                     All done — nice work!
                 </p>
@@ -71,34 +80,40 @@
                 aria-labelledby="heading-takeaway" style="display: none;">
                 <h2 id="heading-takeaway" class="ff-heading">
                     <span class="ff-icon" aria-hidden="true">🧠</span>
-                    Remember This
+                    Key Takeaway
                 </h2>
                 <blockquote class="ff-callout" id="key-takeaway"></blockquote>
             </section>
 
-            <!-- 5. Check Question -->
+            <!-- 5. Think About It (progressive disclosure) -->
             <section class="ff-section ff-section--question" id="section-question"
                 aria-labelledby="heading-question" style="display: none;">
-                <h2 id="heading-question" class="ff-heading">
-                    <span class="ff-icon" aria-hidden="true">🤔</span>
-                    Think About It
-                </h2>
-                <p class="ff-question" id="check-question"></p>
+                <details class="ff-disclosure">
+                    <summary class="ff-disclosure-trigger" id="heading-question">
+                        <span class="ff-icon" aria-hidden="true">🤔</span>
+                        <span class="ff-disclosure-title">Think About It</span>
+                        <span class="ff-disclosure-hint" aria-hidden="true">Show question</span>
+                    </summary>
+                    <div class="ff-disclosure-body">
+                        <p class="ff-question" id="check-question"></p>
+                    </div>
+                </details>
             </section>
 
             <!-- TTS controls -->
-            <div class="ff-tts-bar" id="tts-controls" style="display: none;">
-                <div class="ff-voice-group" role="radiogroup" aria-label="Voice selection">
+            <div class="ff-tts-bar" id="tts-controls" style="display: none;" role="region" aria-label="Read aloud controls">
+                <div class="ff-voice-group" role="radiogroup" aria-label="Voice">
                     <button class="ff-voice-btn active" id="voice-female" role="radio" aria-checked="true">
-                        👩 Female
+                        Female voice
                     </button>
                     <button class="ff-voice-btn" id="voice-male" role="radio" aria-checked="false">
-                        👨 Male
+                        Male voice
                     </button>
                 </div>
                 <button class="ff-btn--tts" id="tts-btn" aria-label="Read explanation aloud">
                     🔊 Read Aloud
                 </button>
+                <span class="ff-tts-status" id="tts-status" aria-live="polite"></span>
             </div>
 
         </div><!-- close #diff-content -->
@@ -141,6 +156,23 @@
                 .replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
         }
 
+        function updateTtsStatus(text) {
+            $('tts-status').textContent = text;
+        }
+
+        // ── Disclosure hint toggle ──
+        document.querySelectorAll('.ff-disclosure').forEach(function (details) {
+            details.addEventListener('toggle', function () {
+                var hint = details.querySelector('.ff-disclosure-hint');
+                if (!hint) return;
+                // Determine default hint text based on the section
+                var isQuestion = details.closest('#section-question');
+                var showText = isQuestion ? 'Show question' : 'Show details';
+                var hideText = isQuestion ? 'Hide question' : 'Hide details';
+                hint.textContent = details.open ? hideText : showText;
+            });
+        });
+
         // ── Update Panel ──
         function updatePanel(data) {
             currentData = data;
@@ -159,7 +191,7 @@
             showSection('section-summary', hasSummary);
             if (hasSummary) $('quick-summary').textContent = data.quickSummary;
 
-            // 2. Why It Works
+            // 2. Why This Fixes It
             const hasWhy = !!data.whyItWorks;
             showSection('section-why', hasWhy);
             if (hasWhy) $('why-it-works').textContent = data.whyItWorks;
@@ -207,6 +239,7 @@
             $('empty-state').style.display = 'none';
             $('diff-content').style.display = '';
             $('tts-controls').style.display = '';
+            updateTtsStatus('');
 
             announce('Fix explanation updated.');
         }
@@ -233,11 +266,13 @@
             if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             isSpeaking = false;
+            updateTtsStatus('');
         }
 
         function speakWithWebSpeech(text) {
             if (!('speechSynthesis' in window) || !text) {
                 announce('Text-to-speech is not available.');
+                updateTtsStatus('');
                 return;
             }
             var u = new SpeechSynthesisUtterance(text);
@@ -245,10 +280,12 @@
             isSpeaking = true;
             $('tts-btn').textContent = '⏹️ Stop';
             $('tts-btn').classList.add('ff-btn--playing');
+            updateTtsStatus('Playing...');
             u.onend = function () {
                 isSpeaking = false;
                 $('tts-btn').textContent = '🔊 Read Aloud';
                 $('tts-btn').classList.remove('ff-btn--playing');
+                updateTtsStatus('');
             };
             window.speechSynthesis.cancel();
             window.speechSynthesis.speak(u);
@@ -277,6 +314,7 @@
                 stopAudio();
                 $('tts-btn').textContent = '🔊 Read Aloud';
                 $('tts-btn').classList.remove('ff-btn--playing');
+                updateTtsStatus('');
                 return;
             }
             var text = getReadableText();
@@ -285,6 +323,7 @@
             if (vscode) {
                 vscode.postMessage({ type: 'requestTts', text: text });
                 $('tts-btn').textContent = '⏳ Loading...';
+                updateTtsStatus('Loading...');
             } else {
                 speakWithWebSpeech(text);
             }
@@ -305,26 +344,31 @@
                 isSpeaking = true;
                 $('tts-btn').textContent = '⏹️ Stop';
                 $('tts-btn').classList.add('ff-btn--playing');
+                updateTtsStatus('Playing...');
                 audio.onended = function () {
                     ttsAudio = null; isSpeaking = false;
                     $('tts-btn').textContent = '🔊 Read Aloud';
                     $('tts-btn').classList.remove('ff-btn--playing');
+                    updateTtsStatus('');
                     announce('Audio finished.');
                 };
                 audio.onerror = function () {
                     ttsAudio = null; isSpeaking = false;
                     $('tts-btn').textContent = '🔊 Read Aloud';
                     $('tts-btn').classList.remove('ff-btn--playing');
+                    updateTtsStatus('');
                     announce('Audio playback failed.');
                 };
                 audio.play().catch(function () {
                     ttsAudio = null; isSpeaking = false;
                     $('tts-btn').textContent = '🔊 Read Aloud';
+                    updateTtsStatus('');
                     announce('Could not play audio.');
                 });
 
             } else if (msg.type === 'ttsError') {
                 announce(msg.data.message);
+                updateTtsStatus('Using browser voice...');
                 speakWithWebSpeech(getReadableText());
 
             } else if (msg.type === 'clear') {

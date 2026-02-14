@@ -32,6 +32,11 @@ function showSection(id: string, hasData: boolean): void {
   if (el) el.style.display = hasData ? "" : "none";
 }
 
+function updateTtsStatus(text: string): void {
+  const el = $("tts-status");
+  if (el) el.textContent = text;
+}
+
 function stripHtml(str: string): string {
   if (!str) return "";
   return str
@@ -63,6 +68,7 @@ function stopAudio(): void {
     window.speechSynthesis.cancel();
   }
   isSpeaking = false;
+  updateTtsStatus("");
 }
 
 function speakWithWebSpeech(text: string): void {
@@ -84,6 +90,7 @@ function speakWithWebSpeech(text: string): void {
       btn.textContent = "🔊 Read Aloud";
       btn.classList.remove("ff-btn--playing");
     }
+    updateTtsStatus("");
   };
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utterance);
@@ -185,6 +192,7 @@ window.addEventListener("message", (event) => {
     );
     currentAudio = audio;
     isSpeaking = true;
+    updateTtsStatus("Playing...");
     const btn = $("tts-btn");
     if (btn) {
       btn.textContent = "⏹️ Stop";
@@ -197,6 +205,7 @@ window.addEventListener("message", (event) => {
         btn.textContent = "🔊 Read Aloud";
         btn.classList.remove("ff-btn--playing");
       }
+      updateTtsStatus("");
       announce("Audio finished.");
     };
     audio.onerror = () => {
@@ -206,19 +215,23 @@ window.addEventListener("message", (event) => {
         btn.textContent = "🔊 Read Aloud";
         btn.classList.remove("ff-btn--playing");
       }
+      updateTtsStatus("Playback failed");
       announce("Audio playback failed.");
     };
     void audio.play().catch(() => {
       currentAudio = undefined;
       isSpeaking = false;
       if (btn) btn.textContent = "🔊 Read Aloud";
+      updateTtsStatus("Could not play");
       announce("Could not play audio.");
     });
   } else if (msg.type === "ttsError") {
     announce(msg.data.message);
+    updateTtsStatus("Using browser voice...");
     speakWithWebSpeech(getReadableText());
   } else if (msg.type === "clear") {
     stopAudio();
+    updateTtsStatus("");
     $("empty-state")!.style.display = "";
     $("diff-content")!.style.display = "none";
   }
@@ -241,4 +254,17 @@ ttsBtn?.addEventListener("click", () => {
   }
   vscode.postMessage({ type: "requestTts", text });
   ttsBtn.textContent = "⏳ Loading...";
+  updateTtsStatus("Loading audio...");
+});
+
+// ── Disclosure hint toggles ──
+
+document.querySelectorAll<HTMLDetailsElement>(".ff-disclosure").forEach((details) => {
+  const hint = details.querySelector(".ff-disclosure-hint");
+  if (!hint) return;
+  const showText = hint.textContent || "Show details";
+  const hideText = showText.replace("Show", "Hide");
+  details.addEventListener("toggle", () => {
+    hint.textContent = details.open ? hideText : showText;
+  });
 });
