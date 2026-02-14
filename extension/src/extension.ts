@@ -7,7 +7,7 @@ import { ErrorPanelProvider } from "./panels/ErrorPanel";
 import { DiffPanelProvider } from "./panels/DiffPanel";
 import { DashboardPanelProvider } from "./panels/DashboardPanel";
 import { CapturedError, BugRecord, WebviewToExtMessage } from "./types";
-import { fetchTtsAudio } from "./ttsClient";
+
 import { getSeedBugRecords } from "./seedData";
 import { loadEnv } from "./envLoader";
 
@@ -143,6 +143,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const bugs = await getBugsWithFallback();
     dashboardPanel.postMessage({ type: "showDashboard", data: { bugs } });
   }, 500);
+
+  // TTS runs directly in the webview (calls ElevenLabs API from browser context)
+  // No extension-host proxy needed
 
   // --- Track last error for Phase 2 correlation ---
   let lastError: CapturedError | undefined;
