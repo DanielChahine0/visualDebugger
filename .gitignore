@@ -1,0 +1,8 @@
+node_modules/
+out/
+dist/
+*.vsix
+*.tsbuildinfo
+*.d.ts
+!src/**/*.d.ts
+.env
