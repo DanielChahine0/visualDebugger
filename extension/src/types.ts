@@ -7,22 +7,47 @@ export interface Quiz {
   explanation: string;
 }
 
-export interface Phase1Response {
+/** Captured error from diagnostics or terminal */
+export interface CapturedError {
+  message: string;
+  file: string;
+  line: number;
+  language: string;
+  codeContext: string; // ±10 lines around the error
+  severity: "error" | "warning";
+  source: "diagnostics" | "terminal";
+  timestamp: number;
+}
+
+/** Phase 1: LLM error explanation response */
+export interface ErrorExplanation {
   category: BugCategory;
   location: string;
   explanation: string;
   howToFix: string;
   howToPrevent: string;
   bestPractices: string;
-  quiz: Quiz;
+  quiz?: Quiz;
 }
 
-export interface Phase2Response {
+/** Captured diff between before/after save */
+export interface CapturedDiff {
+  file: string;
+  language: string;
+  beforeContent: string;
+  afterContent: string;
+  unifiedDiff: string;
+  timestamp: number;
+}
+
+/** Phase 2: LLM diff explanation response */
+export interface DiffExplanation {
   whatChanged: string;
   whyItFixes: string;
   keyTakeaway: string;
 }
 
+/** Request types for the LLM client */
 export interface ErrorAnalysisRequest {
   language: string;
   filename: string;
@@ -36,3 +61,27 @@ export interface DiffAnalysisRequest {
   originalError: string;
   diff: string;
 }
+
+/** Stored bug record for dashboard */
+export interface BugRecord {
+  id: string;
+  category: BugCategory;
+  file: string;
+  errorMessage: string;
+  explanation: ErrorExplanation;
+  diffExplanation?: DiffExplanation;
+  timestamp: number;
+}
+
+/** Messages from extension host -> webview */
+export type ExtToWebviewMessage =
+  | { type: "showError"; data: ErrorExplanation & { raw: CapturedError } }
+  | { type: "showDiff"; data: DiffExplanation & { diff: CapturedDiff } }
+  | { type: "showDashboard"; data: { bugs: BugRecord[] } }
+  | { type: "clear" };
+
+/** Messages from webview -> extension host */
+export type WebviewToExtMessage =
+  | { type: "quizAnswer"; answer: string }
+  | { type: "requestTts"; text: string }
+  | { type: "ready" };

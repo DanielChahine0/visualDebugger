@@ -1,50 +1,176 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import type {
-  ErrorAnalysisRequest,
-  DiffAnalysisRequest,
-  Phase1Response,
-  Phase2Response,
-} from "./types.js";
-
-const MODEL = "gemini-2.0-flash";
-const SECRET_KEY = "flowfixer.geminiApiKey";
-
-export class FlowFixerError extends Error {
-  constructor(message: string, public readonly cause?: unknown) {
-    super(message);
-    this.name = "FlowFixerError";
-  }
-}
-
-// Module-level client — set by initialize()
-let genai: GoogleGenAI | null = null;
-
 /**
- * Initialize the LLM client by reading the API key from VS Code SecretStorage.
- * Must be called before analyzeError() or analyzeDiff().
+ * LLM Client — Gemini API integration.
+ * Uses @google/genai SDK with structured output schemas.
  */
-export async function initialize(
-  secrets: { get(key: string): Thenable<string | undefined> },
-): Promise<void> {
-  const apiKey = await secrets.get(SECRET_KEY);
-  if (!apiKey) {
-    throw new FlowFixerError(
-      `Gemini API key not found. Please set it using the "FlowFixer: Set API Key" command.`,
-    );
+import * as vscode from "vscode";
+import { GoogleGenAI, Type } from "@google/genai";
+import { CapturedError, ErrorExplanation, CapturedDiff, DiffExplanation } from "./types";
+
+const LOG = "[FlowFixer:LLMClient]";
+const MODEL = "gemini-2.0-flash";
+
+export class LLMClient {
+  private genai: GoogleGenAI | undefined;
+
+  constructor(private readonly secrets: vscode.SecretStorage) {}
+
+  async initialize(): Promise<void> {
+    const apiKey = await this.secrets.get("flowfixer.geminiKey");
+    if (!apiKey) {
+      console.warn(`${LOG} no Gemini API key set. Use 'FlowFixer: Set Gemini API Key' command.`);
+      return;
+    }
+    this.genai = new GoogleGenAI({ apiKey });
   }
-  genai = new GoogleGenAI({ apiKey });
+
+  /** Phase 1: Explain an error for a student */
+  async explainError(error: CapturedError): Promise<ErrorExplanation> {
+    const prompt = this.buildErrorPrompt(error);
+
+    if (!this.genai) {
+      console.warn(`${LOG} no API key, returning mock explanation`);
+      return this.mockErrorExplanation(error);
+    }
+
+    try {
+      const response = await this.genai.models.generateContent({
+        model: MODEL,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: PHASE1_SCHEMA,
+        },
+      });
+
+      const text = response.text;
+      if (!text) {
+        throw new Error("Gemini returned an empty response");
+      }
+      return JSON.parse(text) as ErrorExplanation;
+    } catch (err) {
+      console.error(`${LOG} Gemini error explanation failed:`, err);
+      return this.mockErrorExplanation(error);
+    }
+  }
+
+  /** Phase 2: Explain a diff (what the AI fix changed) */
+  async explainDiff(diff: CapturedDiff, originalError: string): Promise<DiffExplanation> {
+    const prompt = this.buildDiffPrompt(diff, originalError);
+
+    if (!this.genai) {
+      console.warn(`${LOG} no API key, returning mock diff explanation`);
+      return this.mockDiffExplanation();
+    }
+
+    try {
+      const response = await this.genai.models.generateContent({
+        model: MODEL,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: PHASE2_SCHEMA,
+        },
+      });
+
+      const text = response.text;
+      if (!text) {
+        throw new Error("Gemini returned an empty response");
+      }
+      return JSON.parse(text) as DiffExplanation;
+    } catch (err) {
+      console.error(`${LOG} Gemini diff explanation failed:`, err);
+      return this.mockDiffExplanation();
+    }
+  }
+
+  private buildErrorPrompt(error: CapturedError): string {
+    const errorMsg = error.message.trim() || "No error message — the code runs but produces incorrect results";
+    return PHASE1_PROMPT
+      .replace("{{language}}", error.language)
+      .replace("{{filename}}", error.file)
+      .replace("{{errorMessage}}", errorMsg)
+      .replace("{{codeContext}}", error.codeContext);
+  }
+
+  private buildDiffPrompt(diff: CapturedDiff, originalError: string): string {
+    return PHASE2_PROMPT
+      .replace("{{language}}", diff.language)
+      .replace("{{filename}}", diff.file)
+      .replace("{{originalError}}", originalError)
+      .replace("{{diff}}", diff.unifiedDiff);
+  }
+
+  private mockErrorExplanation(error: CapturedError): ErrorExplanation {
+    return {
+      category: error.message.toLowerCase().includes("syntax")
+        ? "Syntax Error"
+        : error.message.toLowerCase().includes("type")
+        ? "Runtime Error"
+        : "Logic Error",
+      location: `${error.file}, line ${error.line}`,
+      explanation: `The error "${error.message}" means your code has a problem that prevents it from running correctly. Check the indicated line for issues.`,
+      howToFix: "Review the error message and the code at the indicated line. Look for typos, missing brackets, or undefined variables.",
+      howToPrevent: "Always check your code for common mistakes before running. Use a linter to catch issues early.",
+      bestPractices: "Use TypeScript strict mode and enable ESLint to catch potential errors before they happen.",
+    };
+  }
+
+  private mockDiffExplanation(): DiffExplanation {
+    return {
+      whatChanged: "The AI modified the code to fix the reported error.",
+      whyItFixes: "The changes address the root cause of the error by correcting the problematic code pattern.",
+      keyTakeaway: "Always understand what changed in your code and why before accepting an AI fix.",
+    };
+  }
 }
 
-function getClient(): GoogleGenAI {
-  if (!genai) {
-    throw new FlowFixerError(
-      "LLM client not initialized. Call initialize() with SecretStorage first.",
-    );
-  }
-  return genai;
-}
+// --- Structured output schemas ---
 
-// --- Phase 1: Error Explanation ---
+const PHASE1_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    category: {
+      type: Type.STRING,
+      enum: ["Syntax Error", "Logic Error", "Runtime Error"],
+    },
+    location: { type: Type.STRING },
+    explanation: { type: Type.STRING },
+    howToFix: { type: Type.STRING },
+    howToPrevent: { type: Type.STRING },
+    bestPractices: { type: Type.STRING },
+    quiz: {
+      type: Type.OBJECT,
+      properties: {
+        question: { type: Type.STRING },
+        options: { type: Type.ARRAY, items: { type: Type.STRING } },
+        correct: { type: Type.STRING, enum: ["A", "B", "C", "D"] },
+        explanation: { type: Type.STRING },
+      },
+      required: ["question", "options", "correct", "explanation"],
+    },
+  },
+  required: [
+    "category",
+    "location",
+    "explanation",
+    "howToFix",
+    "howToPrevent",
+    "bestPractices",
+    "quiz",
+  ],
+} as const;
+
+const PHASE2_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    whatChanged: { type: Type.STRING },
+    whyItFixes: { type: Type.STRING },
+    keyTakeaway: { type: Type.STRING },
+  },
+  required: ["whatChanged", "whyItFixes", "keyTakeaway"],
+} as const;
+
+// --- Few-shot prompts ---
 
 const PHASE1_PROMPT = `You are a coding education assistant. A student just hit an error they don't understand. Your job is to explain it clearly so they can learn from it.
 
@@ -194,81 +320,6 @@ Output:
 - Quiz question should test understanding of WHY the error happened, not just what to do about it.
 - Quiz distractors should be plausible but clearly wrong to someone who read the explanation.`;
 
-const PHASE1_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    category: {
-      type: Type.STRING,
-      enum: ["Syntax Error", "Logic Error", "Runtime Error"],
-    },
-    location: { type: Type.STRING },
-    explanation: { type: Type.STRING },
-    howToFix: { type: Type.STRING },
-    howToPrevent: { type: Type.STRING },
-    bestPractices: { type: Type.STRING },
-    quiz: {
-      type: Type.OBJECT,
-      properties: {
-        question: { type: Type.STRING },
-        options: { type: Type.ARRAY, items: { type: Type.STRING } },
-        correct: { type: Type.STRING, enum: ["A", "B", "C", "D"] },
-        explanation: { type: Type.STRING },
-      },
-      required: ["question", "options", "correct", "explanation"],
-    },
-  },
-  required: [
-    "category",
-    "location",
-    "explanation",
-    "howToFix",
-    "howToPrevent",
-    "bestPractices",
-    "quiz",
-  ],
-} as const;
-
-function buildPhase1Prompt(req: ErrorAnalysisRequest): string {
-  const errorMsg = req.errorMessage.trim() || "No error message — the code runs but produces incorrect results";
-  return PHASE1_PROMPT.replace("{{language}}", req.language)
-    .replace("{{filename}}", req.filename)
-    .replace("{{errorMessage}}", errorMsg)
-    .replace("{{codeContext}}", req.codeContext);
-}
-
-export async function analyzeError(
-  req: ErrorAnalysisRequest,
-): Promise<Phase1Response> {
-  const client = getClient();
-  const prompt = buildPhase1Prompt(req);
-
-  try {
-    const response = await client.models.generateContent({
-      model: MODEL,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: PHASE1_SCHEMA,
-      },
-    });
-
-    const text = response.text;
-    if (!text) {
-      throw new FlowFixerError("Gemini returned an empty response.");
-    }
-
-    return JSON.parse(text) as Phase1Response;
-  } catch (error) {
-    if (error instanceof FlowFixerError) throw error;
-    throw new FlowFixerError(
-      `Failed to analyze error: ${error instanceof Error ? error.message : String(error)}`,
-      error,
-    );
-  }
-}
-
-// --- Phase 2: Diff Explanation ---
-
 const PHASE2_PROMPT = `You are a coding education assistant. A student had a bug, and an AI tool just fixed it. Your job is to explain what the AI changed and why.
 
 ## Examples
@@ -344,51 +395,3 @@ Analyze this diff and respond in JSON with the fields: whatChanged, whyItFixes, 
 - Keep whatChanged under 30 words
 - Keep whyItFixes under 50 words
 - keyTakeaway should be a single memorable sentence the student will remember`;
-
-const PHASE2_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    whatChanged: { type: Type.STRING },
-    whyItFixes: { type: Type.STRING },
-    keyTakeaway: { type: Type.STRING },
-  },
-  required: ["whatChanged", "whyItFixes", "keyTakeaway"],
-} as const;
-
-function buildPhase2Prompt(req: DiffAnalysisRequest): string {
-  return PHASE2_PROMPT.replace("{{language}}", req.language)
-    .replace("{{filename}}", req.filename)
-    .replace("{{originalError}}", req.originalError)
-    .replace("{{diff}}", req.diff);
-}
-
-export async function analyzeDiff(
-  req: DiffAnalysisRequest,
-): Promise<Phase2Response> {
-  const client = getClient();
-  const prompt = buildPhase2Prompt(req);
-
-  try {
-    const response = await client.models.generateContent({
-      model: MODEL,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: PHASE2_SCHEMA,
-      },
-    });
-
-    const text = response.text;
-    if (!text) {
-      throw new FlowFixerError("Gemini returned an empty response.");
-    }
-
-    return JSON.parse(text) as Phase2Response;
-  } catch (error) {
-    if (error instanceof FlowFixerError) throw error;
-    throw new FlowFixerError(
-      `Failed to analyze diff: ${error instanceof Error ? error.message : String(error)}`,
-      error,
-    );
-  }
-}
