@@ -62,7 +62,7 @@ export class ErrorPanelProvider implements vscode.WebviewViewProvider {
     html = html.replace(/<script/g, `<script nonce="${nonce}"`);
 
     // Inject CSP
-    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'unsafe-eval'; connect-src https://api.elevenlabs.io blob:;">`;
+    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'unsafe-eval'; connect-src https://api.elevenlabs.io blob:; media-src blob:;">`;
     html = html.replace('<head>', `<head>${csp}`);
 
     return html;
