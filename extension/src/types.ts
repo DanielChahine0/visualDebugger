@@ -47,9 +47,11 @@ export interface CapturedDiff {
 
 /** Phase 2: LLM diff explanation response */
 export interface DiffExplanation {
-  whatChanged: string;
-  whyItFixes: string;
+  quickSummary: string;
+  whyItWorks: string;
+  whatToDoNext: string[];
   keyTakeaway: string;
+  checkQuestion: string;
 }
 
 /** Alias used by tests and external consumers */

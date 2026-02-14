@@ -100,12 +100,18 @@ const MOCK_PHASE1_LOGIC: Phase1Response = {
 };
 
 const MOCK_PHASE2: Phase2Response = {
-  whatChanged:
-    "Added a null check on line 15 before calling .map() and initialized state with an empty array.",
-  whyItFixes:
-    "The original code assumed 'data' was always an array, but on first render it was undefined. Initializing with [] ensures .map() always has an array to work with.",
+  quickSummary: "useState now starts with an empty array. A safety check was added before .map().",
+  whyItWorks:
+    "Before, data had no starting value. That made it undefined. You can't call .map() on undefined. Now data starts as [], so .map() always has a list.",
+  whatToDoNext: [
+    "Confirm useState([]) has square brackets inside.",
+    "Look for other useState() calls that may need a starting value.",
+    "Run the app and verify the TypeError is gone.",
+  ],
   keyTakeaway:
-    "Always initialize state with a default value that matches how you use it.",
+    "Always give useState a starting value that matches how you use it.",
+  checkQuestion:
+    "What happens if you call .map() on something that is undefined?",
 };
 
 // --- Syntax fix test data ---
@@ -121,12 +127,19 @@ const SYNTAX_FIX_REQUEST: DiffAnalysisRequest = {
 };
 
 const SYNTAX_FIX_RESPONSE: Phase2Response = {
-  whatChanged:
-    "Added a closing `)` after the JSX block to close the `return(` statement.",
-  whyItFixes:
-    "The `return(` had no matching `)`, so the parser could not determine where the expression ended. Adding `)` completes it.",
+  quickSummary:
+    "A missing closing parenthesis was added after the JSX block.",
+  whyItWorks:
+    "The return( had no matching ). The parser couldn't find the end. Adding ) closes the return statement.",
+  whatToDoNext: [
+    "Check that every ( has a matching ).",
+    "Look for other multi-line return statements.",
+    "Run the app to confirm the error is gone.",
+  ],
   keyTakeaway:
-    "Every opening parenthesis needs a matching closing one, especially in multi-line JSX returns.",
+    "Every opening parenthesis needs a matching closing one.",
+  checkQuestion:
+    "What was the parser looking for that it couldn't find?",
 };
 
 // --- Logic fix test data ---
@@ -139,12 +152,19 @@ const LOGIC_FIX_REQUEST: DiffAnalysisRequest = {
 };
 
 const LOGIC_FIX_RESPONSE: Phase2Response = {
-  whatChanged:
-    "Changed the loop condition from `<=` to `<` when iterating over the items array.",
-  whyItFixes:
-    "Using `<=` caused the loop to access one index past the end of the array, producing an undefined item. `<` stops at the last valid index.",
+  quickSummary:
+    "The loop condition changed from <= to < for the items array.",
+  whyItWorks:
+    "A 3-item array has spots 0, 1, 2. Using <= tried spot 3 which doesn't exist. Using < stops at the last real spot.",
+  whatToDoNext: [
+    "Check the loop says i < items.length.",
+    "Look for other loops using <=.",
+    "Run the app and count the list items.",
+  ],
   keyTakeaway:
-    "Use `i < array.length` not `i <= array.length` to avoid off-by-one errors.",
+    "Use < array.length, not <= array.length, for loops.",
+  checkQuestion:
+    "Why does items[3] give undefined in a 3-item array?",
 };
 
 // --- Runtime fix test data ---
@@ -161,12 +181,19 @@ const RUNTIME_FIX_REQUEST: DiffAnalysisRequest = {
 };
 
 const RUNTIME_FIX_RESPONSE: Phase2Response = {
-  whatChanged:
-    "Initialized useState with an empty array and added optional chaining `?.` before `.map()`.",
-  whyItFixes:
-    "Without a default value, data was undefined on first render. Calling .map() on undefined crashes. An empty array default and `?.` prevent that.",
+  quickSummary:
+    "useState now starts with an empty array. Optional chaining was added before .map().",
+  whyItWorks:
+    "Without a default value, data was undefined on first render. Calling .map() on undefined crashes. An empty array default and ?. prevent that.",
+  whatToDoNext: [
+    "Confirm useState([]) has square brackets inside.",
+    "Look for other useState() calls that may need a starting value.",
+    "Run the app and verify the TypeError is gone.",
+  ],
   keyTakeaway:
     "Initialize React state to match how you use it — call .map() only on arrays, not undefined.",
+  checkQuestion:
+    "What happens if you call .map() on something that is undefined?",
 };
 
 describe("llmClient", () => {
@@ -418,9 +445,11 @@ describe("llmClient", () => {
       });
 
       expect(result).toEqual(MOCK_PHASE2);
-      expect(result.whatChanged).toBeTruthy();
-      expect(result.whyItFixes).toBeTruthy();
+      expect(result.quickSummary).toBeTruthy();
+      expect(result.whyItWorks).toBeTruthy();
       expect(result.keyTakeaway).toBeTruthy();
+      expect(result.whatToDoNext).toHaveLength(3);
+      expect(result.checkQuestion).toBeTruthy();
     });
 
     it("passes the correct prompt with interpolated values", async () => {
@@ -491,10 +520,12 @@ describe("llmClient", () => {
       const result = await analyzeDiff(SYNTAX_FIX_REQUEST);
 
       expect(result).toEqual(SYNTAX_FIX_RESPONSE);
-      expect(result.whatChanged).toBeTruthy();
-      expect(result.whyItFixes).toBeTruthy();
+      expect(result.quickSummary).toBeTruthy();
+      expect(result.whyItWorks).toBeTruthy();
       expect(result.keyTakeaway).toBeTruthy();
-      expect(result.whatChanged).toMatch(/\)|parenthesis|closing/i);
+      expect(result.quickSummary).toMatch(/\)|parenthesis|closing/i);
+      expect(result.whatToDoNext).toHaveLength(3);
+      expect(result.checkQuestion).toBeTruthy();
     });
 
     it("logic fix returns correct Phase2Response", async () => {
@@ -508,10 +539,12 @@ describe("llmClient", () => {
       const result = await analyzeDiff(LOGIC_FIX_REQUEST);
 
       expect(result).toEqual(LOGIC_FIX_RESPONSE);
-      expect(result.whatChanged).toBeTruthy();
-      expect(result.whyItFixes).toBeTruthy();
+      expect(result.quickSummary).toBeTruthy();
+      expect(result.whyItWorks).toBeTruthy();
       expect(result.keyTakeaway).toBeTruthy();
-      expect(result.whatChanged).toMatch(/<=|less-than/i);
+      expect(result.quickSummary).toMatch(/<=|less-than/i);
+      expect(result.whatToDoNext).toHaveLength(3);
+      expect(result.checkQuestion).toBeTruthy();
     });
 
     it("runtime fix returns correct Phase2Response", async () => {
@@ -525,10 +558,12 @@ describe("llmClient", () => {
       const result = await analyzeDiff(RUNTIME_FIX_REQUEST);
 
       expect(result).toEqual(RUNTIME_FIX_RESPONSE);
-      expect(result.whatChanged).toBeTruthy();
-      expect(result.whyItFixes).toBeTruthy();
+      expect(result.quickSummary).toBeTruthy();
+      expect(result.whyItWorks).toBeTruthy();
       expect(result.keyTakeaway).toBeTruthy();
-      expect(result.whatChanged).toMatch(/useState|optional chaining|\?\./i);
+      expect(result.quickSummary).toMatch(/useState|optional chaining|\?\./i);
+      expect(result.whatToDoNext).toHaveLength(3);
+      expect(result.checkQuestion).toBeTruthy();
     });
 
     it("multi-hunk diff prompt passes full diff content", async () => {
@@ -573,9 +608,11 @@ describe("llmClient", () => {
       await initialize(secrets);
 
       const minimalResponse: Phase2Response = {
-        whatChanged: "Changed x to y.",
-        whyItFixes: "The old value was incorrect.",
+        quickSummary: "Changed x to y.",
+        whyItWorks: "The old value was incorrect.",
+        whatToDoNext: ["Verify the variable name.", "Check for other references.", "Run the app."],
         keyTakeaway: "Use the right variable name.",
+        checkQuestion: "Why was x the wrong variable here?",
       };
 
       mockGenerateContent.mockResolvedValueOnce({
@@ -590,9 +627,11 @@ describe("llmClient", () => {
       });
 
       expect(result).toEqual(minimalResponse);
-      expect(result.whatChanged).toBeTruthy();
-      expect(result.whyItFixes).toBeTruthy();
+      expect(result.quickSummary).toBeTruthy();
+      expect(result.whyItWorks).toBeTruthy();
       expect(result.keyTakeaway).toBeTruthy();
+      expect(result.whatToDoNext).toHaveLength(3);
+      expect(result.checkQuestion).toBeTruthy();
     });
   });
 

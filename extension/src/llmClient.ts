@@ -187,11 +187,13 @@ const PHASE1_SCHEMA = {
 const PHASE2_SCHEMA = {
   type: Type.OBJECT,
   properties: {
-    whatChanged: { type: Type.STRING },
-    whyItFixes: { type: Type.STRING },
+    quickSummary: { type: Type.STRING },
+    whyItWorks: { type: Type.STRING },
+    whatToDoNext: { type: Type.ARRAY, items: { type: Type.STRING } },
     keyTakeaway: { type: Type.STRING },
+    checkQuestion: { type: Type.STRING },
   },
-  required: ["whatChanged", "whyItFixes", "keyTakeaway"],
+  required: ["quickSummary", "whyItWorks", "whatToDoNext", "keyTakeaway", "checkQuestion"],
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -358,7 +360,10 @@ Output:
 - Quiz question should test understanding of WHY the error happened, not just what to do about it.
 - Quiz distractors should be plausible but clearly wrong to someone who read the explanation.`;
 
-const PHASE2_PROMPT = `You are a coding education assistant. A student had a bug, and an AI tool just fixed it. Your job is to explain what the AI changed and why.
+const PHASE2_PROMPT = `You are an accessibility-first coding tutor.
+
+Goal:
+Teach why a fix works, for learners with ADHD and learning disabilities.
 
 ## Examples
 
@@ -376,9 +381,11 @@ Input:
 
 Output:
 {
-  "whatChanged": "Added the missing closing parenthesis \`) \` after the JSX \`<div>\` block to properly close the \`return(\` statement.",
-  "whyItFixes": "JavaScript saw \`return(\` but never found the matching \`)\`. Without it, the parser couldn't tell where the return value ended, so it threw a syntax error. Adding \`)\` closes the expression.",
-  "keyTakeaway": "Every opening parenthesis \`(\` needs a matching closing \`)\` — especially in JSX return statements where the parentheses span multiple lines."
+  "quickSummary": "A missing closing parenthesis was added after the JSX block.",
+  "whyItWorks": "The return( on line 12 had no matching ). The parser couldn't find the end of the expression. Adding ) closes the return statement.",
+  "whatToDoNext": ["Check that every ( has a matching ).", "Look for other multi-line return statements.", "Run the app to confirm the syntax error is gone."],
+  "keyTakeaway": "Every opening parenthesis needs a matching closing one.",
+  "checkQuestion": "What was the parser looking for that it couldn't find?"
 }
 
 ### Example 2: Logic Fix
@@ -392,9 +399,11 @@ Input:
 
 Output:
 {
-  "whatChanged": "Changed the loop condition from \`<=\` (less-than-or-equal) to \`<\` (less-than) on the for-loop iterating over \`items\`.",
-  "whyItFixes": "Arrays are zero-indexed, so an array with 3 items has indices 0, 1, 2. Using \`<= items.length\` made the loop run with i=3, accessing \`items[3]\` which is undefined. \`< items.length\` stops at the last valid index.",
-  "keyTakeaway": "When looping over arrays, use \`i < array.length\`, not \`i <= array.length\` — this is called an off-by-one error."
+  "quickSummary": "The loop condition changed from <= to < when going through items.",
+  "whyItWorks": "Arrays start counting at 0. A 3-item array has spots 0, 1, and 2. Using <= made the loop try spot 3, which doesn't exist. Using < stops at the last real spot.",
+  "whatToDoNext": ["Check the loop on line 10 says i < items.length.", "Look for other loops that might use <=.", "Run the app and count the list items."],
+  "keyTakeaway": "Use < array.length, not <= array.length, for loops.",
+  "checkQuestion": "Why does items[3] give you undefined in a 3-item array?"
 }
 
 ### Example 3: Runtime Fix
@@ -411,9 +420,11 @@ Input:
 
 Output:
 {
-  "whatChanged": "Initialized \`useState\` with an empty array \`[]\` instead of no value, and added optional chaining \`?.\` before \`.map()\`.",
-  "whyItFixes": "Without a default value, \`data\` starts as \`undefined\`. The component renders before \`fetch\` completes, so \`data.map()\` crashes. Initializing with \`[]\` means \`.map()\` runs on an empty array (safe), and \`?.\` adds a safety net.",
-  "keyTakeaway": "Always initialize React state with a value that matches how you use it — if you call \`.map()\`, start with \`[]\`, not \`undefined\`."
+  "quickSummary": "useState now starts with an empty array. A safety check was added before .map().",
+  "whyItWorks": "Before, data had no starting value. That made it undefined. You can't call .map() on undefined. Now data starts as [], so .map() always has a list to work with.",
+  "whatToDoNext": ["Confirm useState([]) has square brackets inside.", "Look for other useState() calls that may need a starting value.", "Run the app and verify the TypeError is gone."],
+  "keyTakeaway": "Always give useState a starting value that matches how you use it.",
+  "checkQuestion": "What happens if you call .map() on something that is undefined?"
 }
 
 ## Input
@@ -424,12 +435,22 @@ Output:
 {{diff}}
 
 ## Instructions
-Analyze this diff and respond in JSON with the fields: whatChanged, whyItFixes, keyTakeaway.
+- Infer the key code changes from the diff.
+- Explain what changed and why the error is resolved.
+- Use short, plain language (6th-8th grade level).
+- Keep sentences under ~14 words.
+- One idea per sentence.
+- Use actual variable/function names from the code.
+- Do not show raw diff symbols (+, -) or patch format.
+- Do not shame, blame, or use harsh tone.
+- If uncertain, state the most likely explanation briefly.
 
 ## Rules
-- Explain for beginners, not experts
-- Reference specific lines from the diff
-- Connect the fix back to the original error
-- Keep whatChanged under 30 words
-- Keep whyItFixes under 50 words
-- keyTakeaway should be a single memorable sentence the student will remember`;
+- Explain for beginners, not experts.
+- Reference specific code from the diff.
+- Connect the fix back to the original error.
+- quickSummary: 1-2 short sentences.
+- whyItWorks: 2-4 short sentences.
+- whatToDoNext: exactly 3 concrete checks.
+- keyTakeaway: one short memory rule.
+- checkQuestion: one comprehension question.`;

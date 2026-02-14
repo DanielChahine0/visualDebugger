@@ -82,21 +82,31 @@
             </div>
         </div>
 
-        <!-- AI Explanation Card ("Why It Broke") -->
+        <!-- AI Explanation Card -->
         <div class="card slide-in diff-explanation" id="explanation-card">
             <div class="section">
-                <div class="section-title"><span class="icon">🤖</span> What the AI Changed</div>
-                <div class="section-content" id="what-changed"></div>
+                <div class="section-title"><span class="icon">🤖</span> Quick Summary</div>
+                <div class="section-content" id="quick-summary"></div>
             </div>
 
             <div class="section mt-12">
-                <div class="section-title"><span class="icon">🎯</span> Why This Fixes It</div>
-                <div class="section-content" id="why-fixes"></div>
+                <div class="section-title"><span class="icon">🎯</span> Why It Works</div>
+                <div class="section-content" id="why-it-works"></div>
+            </div>
+
+            <div class="section mt-12">
+                <div class="section-title"><span class="icon">📋</span> What To Do Next</div>
+                <ol class="section-content" id="what-to-do-next" style="padding-left: 20px; margin: 0;"></ol>
             </div>
 
             <div class="section mt-12">
                 <div class="section-title"><span class="icon">💡</span> Key Takeaway</div>
                 <div class="section-content" id="key-takeaway" style="font-weight: 500; font-style: italic;"></div>
+            </div>
+
+            <div class="section mt-12">
+                <div class="section-title"><span class="icon">❓</span> Check Your Understanding</div>
+                <div class="section-content" id="check-question" style="font-weight: 500;"></div>
             </div>
         </div>
 
@@ -156,9 +166,23 @@
                 document.getElementById('diff-category-badge').textContent = category;
             }
             document.getElementById('diff-file').textContent = fileName;
-            document.getElementById('what-changed').innerHTML = data.whatChanged || '';
-            document.getElementById('why-fixes').innerHTML = data.whyItFixes || '';
+            document.getElementById('quick-summary').innerHTML = data.quickSummary || '';
+            document.getElementById('why-it-works').innerHTML = data.whyItWorks || '';
+
+            // Render whatToDoNext as ordered list items
+            const todoList = document.getElementById('what-to-do-next');
+            todoList.innerHTML = '';
+            if (Array.isArray(data.whatToDoNext)) {
+                data.whatToDoNext.forEach(step => {
+                    const li = document.createElement('li');
+                    li.textContent = step;
+                    li.style.marginBottom = '4px';
+                    todoList.appendChild(li);
+                });
+            }
+
             document.getElementById('key-takeaway').innerHTML = data.keyTakeaway || '';
+            document.getElementById('check-question').innerHTML = data.checkQuestion || '';
 
             // Show content, hide empty state
             document.getElementById('empty-state').style.display = 'none';
@@ -191,25 +215,27 @@
 +++ b/src/App.tsx
 @@ -12,8 +12,8 @@
  import { useState, useEffect } from 'react';
- 
+
  function App() {
 -  const [data, setData] = useState();
 +  const [data, setData] = useState([]);
- 
+
    useEffect(() => {
      fetch('/api/items')
 @@ -22,7 +22,7 @@
    }, []);
- 
+
    return (
 -    <ul>{data.map(item => (
 +    <ul>{data?.map(item => (
        <li key={item.id}>{item.name}</li>
      ))}</ul>
    );`,
-            whatChanged: "The AI added a null check on line 15 before calling .map() and initialized the data state with an empty array [] instead of leaving it as undefined.",
-            whyItFixes: "The original code assumed 'data' was always an array, but before the API response arrives, 'data' is undefined. By initializing it as [], .map() now has a valid (empty) array to iterate over. The optional chaining (data?.map()) adds an extra safety net.",
-            keyTakeaway: "Always initialize state with a default value that matches the expected type — arrays as [], objects as {}, strings as ''."
+            quickSummary: "useState now starts with an empty array. A safety check was added before .map().",
+            whyItWorks: "Before, data had no starting value. That made it undefined. You can't call .map() on undefined. Now data starts as [], so .map() always has a list to work with.",
+            whatToDoNext: ["Confirm useState([]) has square brackets inside.", "Look for other useState() calls that may need a starting value.", "Run the app and verify the TypeError is gone."],
+            keyTakeaway: "Always give useState a starting value that matches how you use it.",
+            checkQuestion: "What happens if you call .map() on something that is undefined?"
         };
 
         // If in browser (no vscode), load mock data immediately for preview
@@ -276,7 +302,7 @@
             
             const data = currentDiffData || MOCK_DIFF_DATA;
             const textToRead = cleanTextForTTS(
-                data.whatChanged + '. ' + data.whyItFixes + '. Key takeaway: ' + data.keyTakeaway
+                data.quickSummary + '. ' + data.whyItWorks + '. Key takeaway: ' + data.keyTakeaway
             );
             
             const apiKey = (typeof ELEVENLABS_API_KEY !== 'undefined' && ELEVENLABS_API_KEY !== 'your_api_key_here')
