@@ -13,11 +13,11 @@
     <div id="error-panel">
         <!-- Header with category badge -->
         <div class="card-header">
-            <h1>🔍 Error Explanation</h1>
+            <h1>Error Explanation</h1>
         </div>
 
         <!-- Empty state — shown before any error is detected -->
-        <div id="empty-state" class="card" style="text-align: center; padding: 32px 16px; opacity: 0.7;">
+        <div id="empty-state" class="card" style="text-align: center; padding: 32px 16px;">
             <p style="font-size: 1.1em; margin-bottom: 8px;">No errors detected yet.</p>
             <p class="text-muted text-sm">Run your program and Visual Debugger will automatically explain any errors that appear.</p>
         </div>
@@ -27,19 +27,18 @@
 
         <!-- Error Location Card -->
         <div class="card slide-in" id="location-card">
-            <div class="card-header">
+            <div class="card-header" style="border-bottom: none; margin-bottom: 8px; padding-bottom: 0;">
                 <span class="badge" id="category-badge"></span>
                 <span class="text-muted text-sm" id="error-location"></span>
             </div>
-            <p id="error-message"
-                style="font-family: var(--vscode-editor-font-family, monospace); background: var(--vscode-textCodeBlock-background, rgba(127,127,127,0.1)); padding: 10px 14px; border-radius: 4px; font-size: 0.92em;">
+            <p id="error-message" style="word-break: break-word; font-family: var(--vscode-editor-font-family, monospace); background-color: var(--vscode-textCodeBlock-background); padding: 8px; border-radius: 3px;">
             </p>
         </div>
 
         <!-- What Happened -->
         <div class="card slide-in" id="explanation-card">
             <div class="section">
-                <div class="section-title"><span class="icon">💡</span> What Happened</div>
+                <div class="section-title">What Happened</div>
                 <div class="section-content" id="explanation-text"></div>
             </div>
         </div>
@@ -47,7 +46,7 @@
         <!-- How to Fix -->
         <div class="card slide-in" id="fix-card">
             <div class="section">
-                <div class="section-title"><span class="icon">🔧</span> How to Fix</div>
+                <div class="section-title">How to Fix</div>
                 <div class="section-content" id="fix-text"></div>
             </div>
         </div>
@@ -55,7 +54,7 @@
         <!-- How to Prevent -->
         <div class="card slide-in" id="prevent-card">
             <div class="section">
-                <div class="section-title"><span class="icon">🛡️</span> How to Prevent</div>
+                <div class="section-title">How to Prevent</div>
                 <div class="section-content" id="prevent-text"></div>
             </div>
         </div>
@@ -63,7 +62,7 @@
         <!-- Best Practices -->
         <div class="card slide-in" id="practices-card">
             <div class="section">
-                <div class="section-title"><span class="icon">⭐</span> Best Practices</div>
+                <div class="section-title">Best Practices</div>
                 <div class="section-content" id="practices-text"></div>
             </div>
         </div>
@@ -71,7 +70,7 @@
         <!-- Quiz Section -->
         <div class="card slide-in" id="quiz-card">
             <div class="section">
-                <div class="section-title"><span class="icon">🧠</span> Test Yourself</div>
+                <div class="section-title">Test Yourself</div>
                 <p class="mb-8" id="quiz-question"></p>
                 <div class="quiz-options" id="quiz-options">
                     <!-- Options rendered by JS -->
@@ -83,16 +82,12 @@
         </div><!-- close #error-content -->
 
         <!-- TTS Controls -->
-        <div class="mt-12" id="tts-controls" style="display: none; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <div
-                style="display: flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--vscode-input-border, rgba(127,127,127,0.25));">
-                <button class="btn voice-toggle active" id="voice-female"
-                    style="border-radius: 0; border: none; padding: 6px 12px; font-size: 0.88em;">👩 Female</button>
-                <button class="btn voice-toggle" id="voice-male"
-                    style="border-radius: 0; border: none; border-left: 1px solid var(--vscode-input-border, rgba(127,127,127,0.25)); padding: 6px 12px; font-size: 0.88em;">👨
-                    Male</button>
+        <div class="mt-12" id="tts-controls" style="display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 20px;">
+            <div class="voice-toggle-group">
+                <button class="voice-toggle active" id="voice-female">Female</button>
+                <button class="voice-toggle" id="voice-male">Male</button>
             </div>
-            <button class="btn btn--secondary" id="tts-btn">🔊 Read Aloud</button>
+            <button class="btn btn--secondary" id="tts-btn">Read Aloud</button>
         </div>
     </div>
 
@@ -114,17 +109,24 @@
             quizAnswered = false;
 
             // 1. Header & Location
-            document.getElementById('category-badge').textContent = data.category;
-            document.getElementById('category-badge').className = 'badge badge--' + data.category.toLowerCase().replace(/\s+/g, '-');
+            const badge = document.getElementById('category-badge');
+            badge.textContent = data.category;
+            badge.className = 'badge'; // Reset classes
+            badge.setAttribute('data-type', data.category.split(' ')[0]); // For CSS targeting (Syntax/Logic/Runtime)
+            
+            // Add specific logic for badge color fallback if CSS variable targeting fails
+            const type = data.category.split(' ')[0];
+            if(type === 'Syntax') { badge.style.color = 'var(--ff-syntax)'; badge.style.borderColor = 'var(--ff-syntax)'; }
+            else if(type === 'Logic') { badge.style.color = 'var(--ff-logic)'; badge.style.borderColor = 'var(--ff-logic)'; }
+            else if(type === 'Runtime') { badge.style.color = 'var(--ff-runtime)'; badge.style.borderColor = 'var(--ff-runtime)'; }
+            
             document.getElementById('error-location').textContent = data.location || (data.raw && data.raw.file + ':' + data.raw.line) || '';
-            // errorMessage may be top-level (mock) or nested under raw (real Gemini data)
             const errorMsg = data.errorMessage || (data.raw && data.raw.message) || '';
             document.getElementById('error-message').textContent = errorMsg;
 
             // 2. Content Sections
             document.getElementById('explanation-text').innerHTML = data.explanation;
 
-            // howToFix: may be an array (mock) or a string (Gemini)
             const howToFix = data.howToFix;
             if (Array.isArray(howToFix)) {
                 const fixList = howToFix.map(step => `<li>${step}</li>`).join('');
@@ -150,30 +152,35 @@
                     const optionEl = document.createElement('div');
                     optionEl.className = 'quiz-option';
                     optionEl.textContent = option;
-                    optionEl.style.animationDelay = (index * 0.06) + 's';
+                    optionEl.style.animationDelay = (index * 0.05) + 's';
+                    optionEl.classList.add('slide-in');
+                    
                     optionEl.addEventListener('click', () => {
                         if (quizAnswered) return;
                         quizAnswered = true;
 
                         document.querySelectorAll('.quiz-option').forEach((el, i) => {
                             el.setAttribute('data-answered', 'true');
-                            el.style.pointerEvents = 'none';
+                            el.style.cursor = 'default';
                             if (i === correctIdx) {
                                 el.classList.add('correct');
                             } else if (i === index && i !== correctIdx) {
                                 el.classList.add('incorrect');
                             } else {
-                                el.style.opacity = '0.5';
+                                el.style.opacity = '0.6';
                             }
                         });
 
                         const isCorrect = index === correctIdx;
                         const fb = document.getElementById('quiz-feedback');
-                        fb.className = 'quiz-feedback ' + (isCorrect ? 'correct' : 'incorrect');
                         fb.textContent = isCorrect
-                            ? '✅ ' + data.quiz.explanation
-                            : '❌ Not quite. ' + data.quiz.explanation;
+                            ? 'Correct! ' + data.quiz.explanation
+                            : 'Not quite. ' + data.quiz.explanation;
                         fb.style.display = 'block';
+                        // Add class for specific coloring based on result
+                        fb.className = 'quiz-feedback'; // reset
+                        if(isCorrect) fb.style.borderLeftColor = 'var(--ff-success)';
+                        else fb.style.borderLeftColor = 'var(--ff-runtime)';
 
                         if (window.vscode) {
                             window.vscode.postMessage({ type: 'quizAnswer', correct: isCorrect });
@@ -200,15 +207,14 @@
             console.log("Browser preview mode (no VS Code API)");
         }
 
-        // Listen for messages from extension
         window.addEventListener('message', (event) => {
-            const { type, data } = event.data; // Extension sends { type: 'showError', data: {...} }
+            const { type, data } = event.data;
             if (type === 'showError') {
                 updatePanel(data);
             }
         });
 
-        // ── Initialization ──
+        // ── Initialization (Mock Data for Preview) ──
         const MOCK_ERROR_DATA = {
             category: "Runtime Error",
             location: "App.tsx, line 15",
@@ -234,23 +240,19 @@
             }
         };
 
-        // If in browser (no vscode), load mock data immediately for preview
         if (!vscode) {
             updatePanel(MOCK_ERROR_DATA);
         } else {
-            // Signal that the webview is ready to receive messages
             vscode.postMessage({ type: 'ready' });
         }
 
-        // ── ElevenLabs TTS — Fine-Tuned Natural Voice ──
-        // Premium voices: Sarah (soft, natural female), Chris (casual, conversational male)
+        // ── ElevenLabs TTS ──
         const VOICES = {
             female: { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah' },
             male: { id: 'iP95p4xoKVk53GoZ742B', name: 'Chris' }
         };
         let selectedVoice = 'female';
         
-        // Voice toggle buttons
         const voiceFemaleBtn = document.getElementById('voice-female');
         const voiceMaleBtn = document.getElementById('voice-male');
         
@@ -265,7 +267,6 @@
             voiceFemaleBtn.classList.remove('active');
         });
 
-        // Strip HTML tags and clean text for natural TTS reading
         function cleanTextForTTS(html) {
             if (!html) return '';
             return html
@@ -275,13 +276,13 @@
                 .replace(/<\/strong>/g, '')
                 .replace(/<em>/g, '')
                 .replace(/<\/em>/g, '')
-                .replace(/<[^>]*>/g, '')    // strip remaining tags
+                .replace(/<[^>]*>/g, '')
                 .replace(/&amp;/g, '&')
                 .replace(/&lt;/g, '<')
                 .replace(/&gt;/g, '>')
                 .replace(/&quot;/g, '"')
                 .replace(/&#39;/g, "'")
-                .replace(/\s+/g, ' ')       // normalize whitespace
+                .replace(/\s+/g, ' ')
                 .trim();
         }
 
@@ -290,17 +291,14 @@
         let isSpeaking = false;
 
         ttsBtn.addEventListener('click', async () => {
-            // Toggle off if already speaking
             if (isSpeaking && ttsAudio) {
                 ttsAudio.pause();
                 ttsAudio = null;
                 isSpeaking = false;
-                ttsBtn.textContent = '🔊 Read Aloud';
-                ttsBtn.classList.remove('btn--tts-playing');
+                ttsBtn.textContent = 'Read Aloud';
                 return;
             }
 
-            // Gather and clean explanation text
             const data = currentErrorData || MOCK_ERROR_DATA;
             const fixText = Array.isArray(data.howToFix) ? data.howToFix.join('. ') : (data.howToFix || '');
             const textToRead = cleanTextForTTS([
@@ -309,12 +307,10 @@
                 'To prevent this in the future: ' + (data.howToPrevent || ''),
             ].join('. '));
 
-            // Use API key from config.js, fall back to browser speech
             const apiKey = (typeof ELEVENLABS_API_KEY !== 'undefined' && ELEVENLABS_API_KEY !== 'your_api_key_here')
                 ? ELEVENLABS_API_KEY : null;
 
-            ttsBtn.textContent = '⏳ Loading...';
-            ttsBtn.classList.add('btn--tts-loading');
+            ttsBtn.textContent = 'Loading...';
 
             if (apiKey) {
                 try {
@@ -333,57 +329,36 @@
                             }
                         })
                     });
-                    if (!res.ok) {
-                        const errorBody = await res.text().catch(() => '');
-                        throw new Error(`API ${res.status}: ${errorBody.slice(0, 100)}`);
-                    }
+                    if (!res.ok) throw new Error('API Error');
                     const blob = await res.blob();
                     const url = URL.createObjectURL(blob);
                     ttsAudio = new Audio(url);
                     isSpeaking = true;
-                    ttsBtn.textContent = '⏹️ Stop';
-                    ttsBtn.classList.remove('btn--tts-loading');
-                    ttsBtn.classList.add('btn--tts-playing');
+                    ttsBtn.textContent = 'Stop';
                     ttsAudio.onended = () => {
                         isSpeaking = false;
-                        ttsBtn.textContent = '🔊 Read Aloud';
-                        ttsBtn.classList.remove('btn--tts-playing');
+                        ttsBtn.textContent = 'Read Aloud';
                         URL.revokeObjectURL(url);
-                    };
-                    ttsAudio.onerror = () => {
-                        isSpeaking = false;
-                        ttsBtn.textContent = '❌ Audio Error';
-                        ttsBtn.classList.remove('btn--tts-playing');
-                        setTimeout(() => { ttsBtn.textContent = '🔊 Read Aloud'; }, 3000);
                     };
                     ttsAudio.play();
                     return;
                 } catch (e) {
                     console.warn('ElevenLabs TTS error:', e);
-                    ttsBtn.textContent = '❌ ' + (e.message || 'TTS Failed');
-                    ttsBtn.classList.remove('btn--tts-loading');
-                    setTimeout(() => { ttsBtn.textContent = '🔊 Read Aloud'; }, 3000);
-                    // Fall through to browser TTS
                 }
             }
 
-            // Fallback: browser SpeechSynthesis
-            ttsBtn.classList.remove('btn--tts-loading');
+            // Fallback
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(textToRead);
-                utterance.rate = 0.95;
-                utterance.pitch = 1.0;
                 isSpeaking = true;
-                ttsBtn.textContent = '⏹️ Stop';
-                ttsBtn.classList.add('btn--tts-playing');
-                utterance.onend = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; ttsBtn.classList.remove('btn--tts-playing'); };
+                ttsBtn.textContent = 'Stop';
+                utterance.onend = () => { isSpeaking = false; ttsBtn.textContent = 'Read Aloud'; };
                 speechSynthesis.speak(utterance);
             } else {
-                ttsBtn.textContent = '❌ TTS Unavailable';
-                setTimeout(() => { ttsBtn.textContent = '🔊 Read Aloud'; }, 3000);
+                ttsBtn.textContent = 'TTS Unavailable';
+                setTimeout(() => { ttsBtn.textContent = 'Read Aloud'; }, 3000);
             }
         });
     </script>
 </body>
-
 </html>
