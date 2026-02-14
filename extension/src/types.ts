@@ -1,3 +1,12 @@
+export type BugCategory = "Syntax Error" | "Logic Error" | "Runtime Error";
+
+export interface Quiz {
+  question: string;
+  options: string[]; // 4 options: "A) ...", "B) ...", "C) ...", "D) ..."
+  correct: "A" | "B" | "C" | "D";
+  explanation: string;
+}
+
 /** Captured error from diagnostics or terminal */
 export interface CapturedError {
   message: string;
@@ -12,18 +21,13 @@ export interface CapturedError {
 
 /** Phase 1: LLM error explanation response */
 export interface ErrorExplanation {
-  category: "Syntax Error" | "Logic Error" | "Runtime Error";
+  category: BugCategory;
   location: string;
   explanation: string;
   howToFix: string;
   howToPrevent: string;
   bestPractices: string;
-  quiz?: {
-    question: string;
-    options: string[];
-    correct: string;
-    explanation: string;
-  };
+  quiz?: Quiz;
 }
 
 /** Captured diff between before/after save */
@@ -43,10 +47,25 @@ export interface DiffExplanation {
   keyTakeaway: string;
 }
 
+/** Request types for the LLM client */
+export interface ErrorAnalysisRequest {
+  language: string;
+  filename: string;
+  errorMessage: string;
+  codeContext: string;
+}
+
+export interface DiffAnalysisRequest {
+  language: string;
+  filename: string;
+  originalError: string;
+  diff: string;
+}
+
 /** Stored bug record for dashboard */
 export interface BugRecord {
   id: string;
-  category: "Syntax Error" | "Logic Error" | "Runtime Error";
+  category: BugCategory;
   file: string;
   errorMessage: string;
   explanation: ErrorExplanation;
