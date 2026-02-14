@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as fs from "fs";
 import { ExtToWebviewMessage, WebviewToExtMessage } from "../types";
 
 const LOG = "[FlowFixer:DiffPanel]";
@@ -40,51 +41,32 @@ export class DiffPanelProvider implements vscode.WebviewViewProvider {
   }
 
   private getHtml(webview: vscode.Webview): string {
+    const htmlPath = vscode.Uri.joinPath(this.extensionUri, "src", "webview", "diff.html");
+    const stylesUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "src", "webview", "styles.css"));
+    const configUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "src", "webview", "config.js"));
     const nonce = getNonce();
-    const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, "src", "webview", "styles.css")
-    );
-    const scriptUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, "dist", "webview", "diffPanel.js")
-    );
 
-    return /* html */ `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; media-src data:;">
-  <link rel="stylesheet" href="${styleUri}">
-  <title>Diff Review</title>
-</head>
-<body>
-  <div id="root">
-    <div id="empty-state" class="empty-state">
-      <p>No AI fixes detected yet.</p>
-      <p class="muted">After an error is explained, Visual Debugger will track the next file save to show what changed.</p>
-    </div>
-    <div id="diff-content" style="display:none;">
-      <button id="tts-btn" class="tts-btn" title="Read explanation aloud">Read Aloud</button>
-      <h3>What the AI changed</h3>
-      <pre id="diff-view" class="diff-view"></pre>
-      <section>
-        <h3>What changed</h3>
-        <p id="what-changed"></p>
-      </section>
-      <section>
-        <h3>Why it fixes the bug</h3>
-        <p id="why-it-fixes"></p>
-      </section>
-      <section>
-        <h3>Key takeaway</h3>
-        <p id="key-takeaway" class="takeaway"></p>
-      </section>
-    </div>
-  </div>
-  <script nonce="${nonce}" src="${scriptUri}"></script>
-</body>
-</html>`;
+    let html = "";
+    try {
+        html = fs.readFileSync(htmlPath.fsPath, "utf8");
+    } catch (e) {
+        console.error(`${LOG} Failed to read diff.html`, e);
+        return `<div>Error loading resource: ${e}</div>`;
+    }
+
+    // Replace resource paths
+    html = html.replace('href="styles.css"', `href="${stylesUri}"`);
+    html = html.replace('src="config.js"', `src="${configUri}"`);
+
+    // Add nonce to all script tags (inline and external)
+    html = html.replace(/<script/g, `<script nonce="${nonce}"`);
+
+    // Inject CSP
+    // Note: Allow cdn.jsdelivr.net for diff2html CSS and JS
+    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'nonce-${nonce}' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src https://api.elevenlabs.io blob:;">`;
+    html = html.replace('<head>', `<head>${csp}`);
+
+    return html;
   }
 }
 

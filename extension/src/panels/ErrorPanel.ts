@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as fs from "fs";
 import { ExtToWebviewMessage, WebviewToExtMessage } from "../types";
 
 const LOG = "[FlowFixer:ErrorPanel]";
@@ -32,185 +33,39 @@ export class ErrorPanelProvider implements vscode.WebviewViewProvider {
     console.log(`${LOG} view resolved`);
   }
 
-  /** Send data to the webview */
   postMessage(message: ExtToWebviewMessage): void {
     if (this.view) {
       this.view.webview.postMessage(message);
       this.view.show?.(true);
-    } else {
-      console.warn(`${LOG} no active view to post message to`);
     }
   }
 
   private getHtml(webview: vscode.Webview): string {
+    const htmlPath = vscode.Uri.joinPath(this.extensionUri, "src", "webview", "error.html");
+    const stylesUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "src", "webview", "styles.css"));
+    const configUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "src", "webview", "config.js"));
     const nonce = getNonce();
-    const styleUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, "src", "webview", "styles.css")
-    );
 
-    return /* html */ `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; media-src data:;">
-  <link rel="stylesheet" href="${styleUri}">
-  <title>Error Explanation</title>
-</head>
-<body>
-  <div id="root">
-    <div id="empty-state" class="empty-state">
-      <p>No errors detected yet.</p>
-      <p class="muted">Visual Debugger will explain errors when they appear in your code.</p>
-    </div>
-    <div id="error-content" style="display:none;">
-      <div class="badge-row">
-        <span id="category-badge" class="badge"></span>
-        <span id="location" class="muted"></span>
-      </div>
-      <button id="tts-btn" class="tts-btn" title="Read explanation aloud">Read Aloud</button>
-      <section>
-        <h3>What happened?</h3>
-        <p id="explanation"></p>
-      </section>
-      <section>
-        <h3>How to fix it</h3>
-        <p id="how-to-fix"></p>
-      </section>
-      <section>
-        <h3>How to prevent it</h3>
-        <p id="how-to-prevent"></p>
-      </section>
-      <section>
-        <h3>Best practices</h3>
-        <p id="best-practices"></p>
-      </section>
-      <section id="quiz-section" style="display:none;">
-        <h3>Test yourself</h3>
-        <p id="quiz-question"></p>
-        <div id="quiz-options"></div>
-        <p id="quiz-feedback" style="display:none;"></p>
-      </section>
-    </div>
-  </div>
-  <script nonce="${nonce}">
-    const vscode = acquireVsCodeApi();
-    vscode.postMessage({ type: 'ready' });
-
-    // --- TTS State ---
-    let ttsAudio = null;
-    let ttsSpeech = null;
-    const ttsBtn = document.getElementById('tts-btn');
-
-    function stopTts() {
-      if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
-      if (ttsSpeech) { speechSynthesis.cancel(); ttsSpeech = null; }
-      ttsBtn.textContent = 'Read Aloud';
+    let html = "";
+    try {
+        html = fs.readFileSync(htmlPath.fsPath, "utf8");
+    } catch (e) {
+        console.error(`${LOG} Failed to read error.html`, e);
+        return `<div>Error loading resource: ${e}</div>`;
     }
 
-    function getExplanationText() {
-      const parts = [
-        document.getElementById('explanation').textContent,
-        document.getElementById('how-to-fix').textContent,
-        document.getElementById('how-to-prevent').textContent,
-        document.getElementById('best-practices').textContent
-      ];
-      return parts.filter(Boolean).join('. ');
-    }
+    // Replace resource paths
+    html = html.replace('href="styles.css"', `href="${stylesUri}"`);
+    html = html.replace('src="config.js"', `src="${configUri}"`);
 
-    ttsBtn.addEventListener('click', () => {
-      if (ttsBtn.textContent === 'Stop') {
-        stopTts();
-        return;
-      }
-      const text = getExplanationText();
-      if (!text) return;
-      ttsBtn.textContent = 'Stop';
-      vscode.postMessage({ type: 'requestTts', text: text });
-    });
+    // Add nonce to all script tags (inline and external)
+    html = html.replace(/<script/g, `<script nonce="${nonce}"`);
 
-    window.addEventListener('message', (event) => {
-      const msg = event.data;
-      if (msg.type === 'showError') {
-        stopTts();
-        document.getElementById('empty-state').style.display = 'none';
-        document.getElementById('error-content').style.display = 'block';
-        const d = msg.data;
+    // Inject CSP
+    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'unsafe-eval'; connect-src https://api.elevenlabs.io blob:;">`;
+    html = html.replace('<head>', `<head>${csp}`);
 
-        const badge = document.getElementById('category-badge');
-        badge.textContent = d.category;
-        badge.className = 'badge badge-' + d.category.toLowerCase().replace(/\\s+/g, '-');
-
-        document.getElementById('location').textContent = d.location;
-        document.getElementById('explanation').textContent = d.explanation;
-        document.getElementById('how-to-fix').textContent = d.howToFix;
-        document.getElementById('how-to-prevent').textContent = d.howToPrevent;
-        document.getElementById('best-practices').textContent = d.bestPractices;
-
-        // Quiz
-        if (d.quiz) {
-          const qs = document.getElementById('quiz-section');
-          qs.style.display = 'block';
-          document.getElementById('quiz-question').textContent = d.quiz.question;
-          const opts = document.getElementById('quiz-options');
-          opts.innerHTML = '';
-          d.quiz.options.forEach((opt) => {
-            const btn = document.createElement('button');
-            btn.className = 'quiz-option';
-            btn.textContent = opt;
-            btn.onclick = () => {
-              const letter = opt.charAt(0);
-              vscode.postMessage({ type: 'quizAnswer', answer: letter });
-              const fb = document.getElementById('quiz-feedback');
-              fb.style.display = 'block';
-              if (letter === d.quiz.correct) {
-                fb.textContent = 'Correct! ' + d.quiz.explanation;
-                fb.className = 'quiz-correct';
-              } else {
-                fb.textContent = 'Not quite. ' + d.quiz.explanation;
-                fb.className = 'quiz-incorrect';
-              }
-              opts.querySelectorAll('button').forEach(b => b.disabled = true);
-            };
-            opts.appendChild(btn);
-          });
-        }
-      } else if (msg.type === 'playAudio') {
-        ttsAudio = new Audio('data:audio/mpeg;base64,' + msg.data.audio);
-        ttsAudio.play();
-        ttsAudio.addEventListener('ended', () => stopTts());
-        ttsAudio.addEventListener('error', () => {
-          stopTts();
-          // Fall back to browser speech
-          const text = getExplanationText();
-          if (text) {
-            ttsSpeech = new SpeechSynthesisUtterance(text);
-            ttsSpeech.onend = () => stopTts();
-            speechSynthesis.speak(ttsSpeech);
-            ttsBtn.textContent = 'Stop';
-          }
-        });
-      } else if (msg.type === 'ttsError') {
-        // Fall back to browser SpeechSynthesis
-        const text = getExplanationText();
-        if (text) {
-          ttsSpeech = new SpeechSynthesisUtterance(text);
-          ttsSpeech.onend = () => stopTts();
-          speechSynthesis.speak(ttsSpeech);
-          ttsBtn.textContent = 'Stop';
-        } else {
-          stopTts();
-        }
-      } else if (msg.type === 'clear') {
-        stopTts();
-        document.getElementById('empty-state').style.display = 'block';
-        document.getElementById('error-content').style.display = 'none';
-      }
-    });
-  </script>
-</body>
-</html>`;
+    return html;
   }
 }
 

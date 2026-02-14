@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Fix Review — Visual Debugger</title>
     <link rel="stylesheet" href="styles.css" />
+    <script src="config.js"></script>
     <!-- diff2html CSS (CDN for browser preview; will be bundled by esbuild later) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html@3.4.48/bundles/css/diff2html.min.css" />
     <style>
@@ -102,8 +103,16 @@
             </div>
         </div>
 
-        <!-- TTS Button -->
-        <div class="mt-12">
+        <!-- TTS Controls -->
+        <div class="mt-12" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div
+                style="display: flex; border-radius: 6px; overflow: hidden; border: 1px solid var(--vscode-input-border, rgba(127,127,127,0.25));">
+                <button class="btn voice-toggle active" id="voice-female"
+                    style="border-radius: 0; border: none; padding: 6px 12px; font-size: 0.88em;">👩 Female</button>
+                <button class="btn voice-toggle" id="voice-male"
+                    style="border-radius: 0; border: none; border-left: 1px solid var(--vscode-input-border, rgba(127,127,127,0.25)); padding: 6px 12px; font-size: 0.88em;">👨
+                    Male</button>
+            </div>
             <button class="btn btn--secondary" id="tts-btn">🔊 Read Aloud</button>
         </div>
     </div>
@@ -111,13 +120,64 @@
     <!-- diff2html JS (CDN for browser preview) -->
     <script src="https://cdn.jsdelivr.net/npm/diff2html@3.4.48/bundles/js/diff2html.min.js"></script>
     <script>
-        // ================================================================
-        // DATA CONTRACT — This is the shape Engineer 1 will send
-        // via postMessage from panels/DiffPanel.ts
-        //
-        // The unified diff string comes from diffEngine.ts (Engineer 1).
-        // The explanation JSON comes from llmClient.ts (Engineer 3).
-        // ================================================================
+        // ── State ──
+        let currentDiffData = null;
+
+        // ── VS Code Integration ──
+        let vscode;
+        try {
+            vscode = acquireVsCodeApi();
+            window.vscode = vscode;
+        } catch (e) {
+            console.log("Browser preview mode (no VS Code API)");
+        }
+
+        // Listen for messages from extension
+        window.addEventListener('message', (event) => {
+            const { type, data } = event.data; // Extension sends { type: 'showDiff', data: {...} }
+            if (type === 'showDiff') {
+                updatePanel(data);
+            }
+        });
+
+        // ── Main Update Function ──
+        function updatePanel(data) {
+            currentDiffData = data;
+
+            // Render Diff
+            renderDiff(data.unifiedDiff);
+
+            // Render Text Content
+            document.getElementById('diff-category-badge').textContent = data.category;
+            // Handle badge color mapping if needed, similar to error.html
+            document.getElementById('diff-file').textContent = data.fileName;
+            document.getElementById('what-changed').innerHTML = data.whatChanged;
+            document.getElementById('why-fixes').innerHTML = data.whyItFixes;
+            document.getElementById('key-takeaway').innerHTML = data.keyTakeaway;
+            
+            // Show content
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('diff-content').style.display = 'block';
+        }
+
+        // ── Render diff using diff2html ──
+        function renderDiff(diffString) {
+            const diffOutput = document.getElementById('diff-output');
+            if (typeof Diff2Html !== 'undefined') {
+                diffOutput.innerHTML = Diff2Html.html(diffString, {
+                    drawFileList: false,
+                    matching: 'lines',
+                    outputFormat: 'side-by-side',
+                    renderNothingWhenEmpty: false
+                });
+            } else {
+                // Fallback: show raw diff in a pre tag
+                diffOutput.innerHTML = '<pre style="padding: 12px; overflow-x: auto;"><code>' +
+                    diffString.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code></pre>';
+            }
+        }
+
+        // ── Initialization ──
         const MOCK_DIFF_DATA = {
             category: "Runtime Error",
             fileName: "App.tsx",
@@ -146,43 +206,32 @@
             keyTakeaway: "Always initialize state with a default value that matches the expected type — arrays as [], objects as {}, strings as ''."
         };
 
-        // ── Render diff using diff2html ──
-        function renderDiff(diffString) {
-            const diffOutput = document.getElementById('diff-output');
-            if (typeof Diff2Html !== 'undefined') {
-                diffOutput.innerHTML = Diff2Html.html(diffString, {
-                    drawFileList: false,
-                    matching: 'lines',
-                    outputFormat: 'side-by-side',
-                    renderNothingWhenEmpty: false
-                });
-            } else {
-                // Fallback: show raw diff in a pre tag
-                diffOutput.innerHTML = '<pre style="padding: 12px; overflow-x: auto;"><code>' +
-                    diffString.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code></pre>';
-            }
+        // If in browser (no vscode), load mock data immediately for preview
+        if (!vscode) {
+            updatePanel(MOCK_DIFF_DATA);
         }
 
-        // Initial render with mock data
-        renderDiff(MOCK_DIFF_DATA.unifiedDiff);
+        // ── ElevenLabs TTS — Natural Voice Integration ──
+        const VOICES = {
+            female: { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel' },
+            male: { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh' }
+        };
+        let selectedVoice = 'female';
 
-        // ── Message Listener (for VS Code integration) ──
-        // Engineer 1 will send messages from panels/DiffPanel.ts
-        // Uncomment below when integrating:
-        // const vscode = acquireVsCodeApi();
-        // window.addEventListener('message', (event) => {
-        //   const { type, payload } = event.data;
-        //   if (type === 'showDiff') {
-        //     renderDiff(payload.unifiedDiff);
-        //     document.getElementById('what-changed').textContent = payload.whatChanged;
-        //     document.getElementById('why-fixes').textContent = payload.whyItFixes;
-        //     document.getElementById('key-takeaway').textContent = payload.keyTakeaway;
-        //     document.getElementById('diff-category-badge').textContent = payload.category;
-        //     document.getElementById('diff-file').textContent = payload.fileName;
-        //   }
-        // });
+        const voiceFemaleBtn = document.getElementById('voice-female');
+        const voiceMaleBtn = document.getElementById('voice-male');
 
-        // ── TTS Button — ElevenLabs Integration ──
+        voiceFemaleBtn.addEventListener('click', () => {
+            selectedVoice = 'female';
+            voiceFemaleBtn.classList.add('active');
+            voiceMaleBtn.classList.remove('active');
+        });
+        voiceMaleBtn.addEventListener('click', () => {
+            selectedVoice = 'male';
+            voiceMaleBtn.classList.add('active');
+            voiceFemaleBtn.classList.remove('active');
+        });
+
         const ttsBtn = document.getElementById('tts-btn');
         let ttsAudio = null;
         let isSpeaking = false;
@@ -190,35 +239,60 @@
         ttsBtn.addEventListener('click', async () => {
             if (isSpeaking && ttsAudio) {
                 ttsAudio.pause(); ttsAudio = null; isSpeaking = false;
-                ttsBtn.textContent = '🔊 Read Aloud'; return;
+                ttsBtn.textContent = '🔊 Read Aloud';
+                ttsBtn.classList.remove('btn--tts-playing');
+                return;
             }
-            const textToRead = MOCK_DIFF_DATA.whatChanged + '. ' + MOCK_DIFF_DATA.whyItFixes + '. Key takeaway: ' + MOCK_DIFF_DATA.keyTakeaway;
-            let apiKey = sessionStorage.getItem('elevenlabs_key');
-            if (!apiKey) {
-                apiKey = prompt('Enter your ElevenLabs API key (or cancel for browser TTS):');
-                if (apiKey) sessionStorage.setItem('elevenlabs_key', apiKey);
-            }
+            
+            const data = currentDiffData || MOCK_DIFF_DATA;
+            const textToRead = data.whatChanged + '. ' + data.whyItFixes + '. Key takeaway: ' + data.keyTakeaway;
+            
+            const apiKey = (typeof ELEVENLABS_API_KEY !== 'undefined' && ELEVENLABS_API_KEY !== 'your_api_key_here')
+                ? ELEVENLABS_API_KEY : null;
             ttsBtn.textContent = '⏳ Loading...';
+            ttsBtn.classList.add('btn--tts-loading');
             if (apiKey) {
                 try {
-                    const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
+                    const voice = VOICES[selectedVoice];
+                    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice.id}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'xi-api-key': apiKey },
-                        body: JSON.stringify({ text: textToRead, model_id: 'eleven_monolingual_v1', voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
+                        body: JSON.stringify({
+                            text: textToRead,
+                            model_id: 'eleven_multilingual_v2',
+                            voice_settings: {
+                                stability: 0.65,
+                                similarity_boost: 0.80,
+                                style: 0.35,
+                                use_speaker_boost: true
+                            }
+                        })
                     });
                     if (!res.ok) throw new Error('API error ' + res.status);
                     const blob = await res.blob();
                     const url = URL.createObjectURL(blob);
                     ttsAudio = new Audio(url);
-                    isSpeaking = true; ttsBtn.textContent = '⏹️ Stop';
-                    ttsAudio.onended = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; URL.revokeObjectURL(url); };
-                    ttsAudio.play(); return;
+                    isSpeaking = true;
+                    ttsBtn.textContent = '⏹️ Stop';
+                    ttsBtn.classList.remove('btn--tts-loading');
+                    ttsBtn.classList.add('btn--tts-playing');
+                    ttsAudio.onended = () => {
+                        isSpeaking = false;
+                        ttsBtn.textContent = '🔊 Read Aloud';
+                        ttsBtn.classList.remove('btn--tts-playing');
+                        URL.revokeObjectURL(url);
+                    };
+                    ttsAudio.play();
+                    return;
                 } catch (e) { console.warn('ElevenLabs failed, falling back:', e); }
             }
+            ttsBtn.classList.remove('btn--tts-loading');
             if ('speechSynthesis' in window) {
                 const u = new SpeechSynthesisUtterance(textToRead); u.rate = 0.95;
-                isSpeaking = true; ttsBtn.textContent = '⏹️ Stop';
-                u.onend = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; };
+                isSpeaking = true;
+                ttsBtn.textContent = '⏹️ Stop';
+                ttsBtn.classList.add('btn--tts-playing');
+                u.onend = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; ttsBtn.classList.remove('btn--tts-playing'); };
                 speechSynthesis.speak(u);
             } else { ttsBtn.textContent = '🔊 Read Aloud'; alert('TTS not available.'); }
         });

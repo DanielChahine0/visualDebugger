@@ -15,7 +15,12 @@
  *   Set via the "FlowFixer: Set ElevenLabs Key" command.
  */
 
-const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Rachel
+// ElevenLabs voices — natural, clear, educational-sounding
+const VOICES = {
+    female: '21m00Tcm4TlvDq8ikWAM', // Rachel
+    male: 'TxGEqnHWrfWFTfGW9XjX',   // Josh
+};
+const DEFAULT_VOICE_ID = VOICES.female;
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
 export interface TTSOptions {
@@ -45,10 +50,12 @@ export async function fetchTtsAudio(
         },
         body: JSON.stringify({
             text,
-            model_id: options.modelId || 'eleven_monolingual_v1',
+            model_id: options.modelId || 'eleven_multilingual_v2',
             voice_settings: {
-                stability: options.stability ?? 0.5,
-                similarity_boost: options.similarityBoost ?? 0.75,
+                stability: options.stability ?? 0.65,
+                similarity_boost: options.similarityBoost ?? 0.80,
+                style: 0.35,
+                use_speaker_boost: true,
             },
         }),
     });

@@ -1,5 +1,5 @@
 /* ============================================================
-   FlowFixer — Shared Webview Styles
+   FlowFixer — Shared Webview Styles (Phase 2 Polish)
    Uses VS Code CSS variables for automatic theme compatibility
    (dark, light, high-contrast all work out of the box).
    ============================================================ */
@@ -11,6 +11,20 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+:root {
+    --ff-green: #4caf50;
+    --ff-red: #f44336;
+    --ff-yellow: #ff9800;
+    --ff-blue: #2196f3;
+    --ff-purple: #9c27b0;
+    --ff-transition-fast: 0.15s ease;
+    --ff-transition-med: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --ff-transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    --ff-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+    --ff-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+    --ff-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.2), 0 6px 10px rgba(0, 0, 0, 0.12);
 }
 
 body {
@@ -26,10 +40,12 @@ body {
 a {
     color: var(--vscode-textLink-foreground);
     text-decoration: none;
+    transition: opacity var(--ff-transition-fast);
 }
 
 a:hover {
     text-decoration: underline;
+    opacity: 0.85;
 }
 
 /* ── Typography ────────────────────────────────────────────── */
@@ -59,21 +75,55 @@ p {
     color: var(--vscode-descriptionForeground, var(--vscode-foreground));
 }
 
+section {
+    margin-bottom: 14px;
+}
+
 code {
     font-family: var(--vscode-editor-font-family, 'Consolas', monospace);
     font-size: var(--vscode-editor-font-size, 13px);
     background: var(--vscode-textCodeBlock-background, rgba(127, 127, 127, 0.15));
     padding: 2px 6px;
     border-radius: 3px;
+    transition: background var(--ff-transition-fast);
+}
+
+code:hover {
+    background: var(--vscode-textCodeBlock-background, rgba(127, 127, 127, 0.25));
 }
 
 /* ── Cards ─────────────────────────────────────────────────── */
 .card {
     background: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
     border: 1px solid var(--vscode-widget-border, var(--vscode-editorWidget-border, rgba(127, 127, 127, 0.2)));
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 16px;
     margin-bottom: 12px;
+    transition: border-color var(--ff-transition-med), box-shadow var(--ff-transition-med), transform var(--ff-transition-med);
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--ff-blue), var(--ff-purple), var(--ff-blue));
+    opacity: 0;
+    transition: opacity var(--ff-transition-med);
+}
+
+.card:hover {
+    border-color: var(--vscode-focusBorder, rgba(0, 120, 212, 0.5));
+    box-shadow: var(--ff-shadow-md);
+    transform: translateY(-1px);
+}
+
+.card:hover::before {
+    opacity: 1;
 }
 
 .card-header {
@@ -99,6 +149,11 @@ code {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     white-space: nowrap;
+    transition: transform var(--ff-transition-fast), box-shadow var(--ff-transition-fast);
+}
+
+.badge:hover {
+    transform: scale(1.05);
 }
 
 .badge--syntax {
@@ -107,16 +162,56 @@ code {
     border: 1px solid rgba(255, 170, 0, 0.35);
 }
 
+.badge--syntax:hover {
+    box-shadow: 0 0 8px rgba(255, 170, 0, 0.3);
+}
+
 .badge--logic {
     background: rgba(0, 162, 255, 0.18);
     color: #00a2ff;
     border: 1px solid rgba(0, 162, 255, 0.35);
 }
 
+.badge--logic:hover {
+    box-shadow: 0 0 8px rgba(0, 162, 255, 0.3);
+}
+
 .badge--runtime {
     background: rgba(255, 85, 85, 0.18);
     color: #ff5555;
     border: 1px solid rgba(255, 85, 85, 0.35);
+}
+
+.badge--runtime:hover {
+    box-shadow: 0 0 8px rgba(255, 85, 85, 0.3);
+}
+
+/* Aliases for Engineer 1's naming convention */
+.badge-syntax-error {
+    background: var(--ff-yellow);
+    color: #000;
+}
+
+.badge-runtime-error {
+    background: var(--ff-red);
+    color: #fff;
+}
+
+.badge-logic-error {
+    background: var(--ff-blue);
+    color: #fff;
+}
+
+.badge-sm {
+    font-size: 0.7em;
+    padding: 1px 7px;
+}
+
+.badge-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
 }
 
 /* ── Sections (for explanation panel) ──────────────────────── */
@@ -134,10 +229,20 @@ code {
     letter-spacing: 0.8px;
     color: var(--vscode-descriptionForeground);
     margin-bottom: 6px;
+    transition: color var(--ff-transition-fast);
+}
+
+.card:hover .section-title {
+    color: var(--vscode-foreground);
 }
 
 .section-title .icon {
     font-size: 1.1em;
+    transition: transform var(--ff-transition-med);
+}
+
+.card:hover .section-title .icon {
+    transform: scale(1.15);
 }
 
 .section-content {
@@ -145,22 +250,59 @@ code {
     line-height: 1.6;
 }
 
+.muted {
+    color: var(--vscode-descriptionForeground);
+    font-size: 0.9em;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 32px 16px;
+    opacity: 0.7;
+}
+
 /* ── Buttons ───────────────────────────────────────────────── */
 .btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: var(--vscode-font-size, 13px);
     font-family: var(--vscode-font-family, 'Segoe UI', system-ui, sans-serif);
     cursor: pointer;
-    transition: opacity 0.15s ease;
+    transition: all var(--ff-transition-med);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+}
+
+.btn:hover::after {
+    width: 200px;
+    height: 200px;
 }
 
 .btn:hover {
-    opacity: 0.85;
+    transform: translateY(-1px);
+    box-shadow: var(--ff-shadow-sm);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: none;
 }
 
 .btn--primary {
@@ -171,6 +313,47 @@ code {
 .btn--secondary {
     background: var(--vscode-button-secondaryBackground);
     color: var(--vscode-button-secondaryForeground);
+}
+
+/* TTS-specific button states */
+.btn--tts-loading {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.btn--tts-playing {
+    animation: ttsGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes ttsGlow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 4px rgba(0, 120, 212, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 12px rgba(0, 120, 212, 0.6);
+    }
+}
+
+/* Voice toggle (Male / Female) */
+.voice-toggle {
+    background: var(--vscode-input-background, rgba(127, 127, 127, 0.1));
+    color: var(--vscode-descriptionForeground);
+    cursor: pointer;
+    transition: all var(--ff-transition-med);
+    font-weight: 500;
+}
+
+.voice-toggle:hover {
+    background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.15));
+    color: var(--vscode-foreground);
+}
+
+.voice-toggle.active {
+    background: var(--vscode-button-background, #0078d4);
+    color: var(--vscode-button-foreground, #fff);
 }
 
 /* ── Quiz ──────────────────────────────────────────────────── */
@@ -190,14 +373,32 @@ code {
     border: 1px solid var(--vscode-input-border, rgba(127, 127, 127, 0.25));
     border-radius: 6px;
     cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    transition: all var(--ff-transition-med);
     color: var(--vscode-foreground);
     font-size: var(--vscode-font-size, 13px);
+    position: relative;
+    overflow: hidden;
+}
+
+.quiz-option::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: transparent;
+    transition: background var(--ff-transition-med);
 }
 
 .quiz-option:hover {
     border-color: var(--vscode-focusBorder);
     background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.15));
+    transform: translateX(4px);
+}
+
+.quiz-option:hover::before {
+    background: var(--vscode-focusBorder, var(--ff-blue));
 }
 
 .quiz-option.selected {
@@ -208,36 +409,232 @@ code {
 .quiz-option.correct {
     border-color: #4caf50;
     background: rgba(76, 175, 80, 0.12);
+    animation: correctPulse 0.5s ease-out;
+}
+
+.quiz-option.correct::before {
+    background: #4caf50;
 }
 
 .quiz-option.incorrect {
     border-color: #ff5555;
     background: rgba(255, 85, 85, 0.12);
+    animation: shake 0.4s ease-out;
+}
+
+.quiz-option.incorrect::before {
+    background: #ff5555;
+}
+
+.quiz-option:disabled,
+.quiz-option[data-answered="true"] {
+    cursor: default;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+@keyframes correctPulse {
+    0% {
+        transform: scale(1);
+    }
+
+    30% {
+        transform: scale(1.02);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    20% {
+        transform: translateX(-4px);
+    }
+
+    40% {
+        transform: translateX(4px);
+    }
+
+    60% {
+        transform: translateX(-3px);
+    }
+
+    80% {
+        transform: translateX(2px);
+    }
 }
 
 .quiz-feedback {
-    padding: 10px 14px;
-    border-radius: 6px;
+    padding: 12px 16px;
+    border-radius: 8px;
     margin-top: 8px;
     font-size: 0.92em;
     line-height: 1.5;
+    animation: revealFeedback 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes revealFeedback {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+        max-height: 0;
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 200px;
+    }
 }
 
 .quiz-feedback.correct {
     background: rgba(76, 175, 80, 0.12);
     border: 1px solid rgba(76, 175, 80, 0.3);
     color: #4caf50;
+    border-left: 3px solid #4caf50;
 }
 
 .quiz-feedback.incorrect {
     background: rgba(255, 85, 85, 0.12);
     border: 1px solid rgba(255, 85, 85, 0.3);
     color: #ff5555;
+    border-left: 3px solid #ff5555;
 }
 
-/* ── Diff Panel (diff2html overrides) ──────────────────────── */
+.quiz-correct {
+    color: var(--ff-green);
+    font-weight: 600;
+}
+
+.quiz-incorrect {
+    color: var(--ff-red);
+    font-weight: 600;
+}
+
+/* ── Diff Panel ────────────────────────────────────────────── */
 .diff-explanation {
     margin-top: 16px;
+}
+
+.diff-view {
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-panel-border, #444);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: var(--vscode-editor-font-size, 12px);
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.6;
+}
+
+.diff-add {
+    color: var(--ff-green);
+}
+
+.diff-del {
+    color: var(--ff-red);
+}
+
+.diff-hunk {
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+}
+
+.diff-meta {
+    color: var(--vscode-descriptionForeground);
+}
+
+.takeaway {
+    font-style: italic;
+    border-left: 3px solid var(--ff-blue);
+    padding-left: 10px;
+}
+
+/* Prism token-level syntax highlighting (VS Code-aligned colors) */
+.token.keyword {
+    color: #c586c0;
+}
+
+.token.string,
+.token.template-string {
+    color: #ce9178;
+}
+
+.token.number {
+    color: #b5cea8;
+}
+
+.token.boolean {
+    color: #569cd6;
+}
+
+.token.function {
+    color: #dcdcaa;
+}
+
+.token.class-name {
+    color: #4ec9b0;
+}
+
+.token.operator {
+    color: #d4d4d4;
+}
+
+.token.punctuation {
+    color: #d4d4d4;
+}
+
+.token.comment {
+    color: #6a9955;
+    font-style: italic;
+}
+
+.token.tag {
+    color: #569cd6;
+}
+
+.token.attr-name {
+    color: #9cdcfe;
+}
+
+.token.attr-value {
+    color: #ce9178;
+}
+
+.token.constant {
+    color: #4fc1ff;
+}
+
+.token.builtin {
+    color: #4ec9b0;
+}
+
+.token.parameter {
+    color: #9cdcfe;
+}
+
+.token.property {
+    color: #9cdcfe;
+}
+
+.token.regex {
+    color: #d16969;
+}
+
+.diff-add .token {
+    opacity: 0.85;
+}
+
+.diff-del .token {
+    opacity: 0.85;
 }
 
 /* ── Dashboard ─────────────────────────────────────────────── */
@@ -247,32 +644,167 @@ code {
     gap: 16px;
 }
 
+.stat-card {
+    text-align: center;
+    padding: 12px;
+    transition: transform var(--ff-transition-med);
+}
+
+.stat-card:hover {
+    transform: scale(1.03);
+}
+
+.stat-value {
+    font-size: 2em;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--ff-blue), var(--ff-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
 .chart-container {
     position: relative;
     width: 100%;
     max-height: 280px;
+    margin: 10px 0;
 }
 
 .focus-area {
     padding: 14px 16px;
-    border-radius: 6px;
+    border-radius: 8px;
     background: var(--vscode-inputValidation-infoBackground, rgba(0, 120, 212, 0.1));
     border: 1px solid var(--vscode-inputValidation-infoBorder, rgba(0, 120, 212, 0.3));
+    transition: all var(--ff-transition-med);
+    position: relative;
+    overflow: hidden;
+}
+
+.focus-area::before {
+    content: '🎯';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.8em;
+    opacity: 0.15;
+    transition: opacity var(--ff-transition-med), transform var(--ff-transition-med);
+}
+
+.focus-area:hover::before {
+    opacity: 0.3;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.focus-area:hover {
+    box-shadow: var(--ff-shadow-sm);
+    border-color: var(--ff-blue);
 }
 
 .focus-area h3 {
     margin-bottom: 4px;
 }
 
+/* Dashboard bar chart fallback (Engineer 1's approach) */
+.bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0;
+}
+
+.bar-label {
+    width: 100px;
+    font-size: 0.85em;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.bar-track {
+    flex: 1;
+    height: 18px;
+    background: var(--vscode-editor-background);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bar-syntax-error {
+    background: linear-gradient(90deg, var(--ff-yellow), #ffb74d);
+}
+
+.bar-runtime-error {
+    background: linear-gradient(90deg, var(--ff-red), #e57373);
+}
+
+.bar-logic-error {
+    background: linear-gradient(90deg, var(--ff-blue), #64b5f6);
+}
+
+.bar-count {
+    width: 24px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.bug-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    font-size: 0.85em;
+    border-radius: 4px;
+    transition: background var(--ff-transition-fast);
+}
+
+.bug-item:hover {
+    background: var(--vscode-list-hoverBackground, rgba(127, 127, 127, 0.08));
+}
+
 /* ── Animations ────────────────────────────────────────────── */
+
+/* Staggered slide-in for cards */
 .slide-in {
-    animation: slideIn 0.3s ease-out;
+    animation: slideIn var(--ff-transition-slow) backwards;
+}
+
+.slide-in:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.slide-in:nth-child(2) {
+    animation-delay: 0.08s;
+}
+
+.slide-in:nth-child(3) {
+    animation-delay: 0.16s;
+}
+
+.slide-in:nth-child(4) {
+    animation-delay: 0.24s;
+}
+
+.slide-in:nth-child(5) {
+    animation-delay: 0.32s;
+}
+
+.slide-in:nth-child(6) {
+    animation-delay: 0.40s;
+}
+
+.slide-in:nth-child(7) {
+    animation-delay: 0.48s;
 }
 
 @keyframes slideIn {
     from {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(16px);
     }
 
     to {
@@ -292,6 +824,43 @@ code {
 
     to {
         opacity: 1;
+    }
+}
+
+/* Subtle pulse for focus attention */
+.pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Gradient shimmer for loading states */
+.shimmer {
+    background: linear-gradient(90deg,
+            rgba(127, 127, 127, 0.1) 25%,
+            rgba(127, 127, 127, 0.2) 50%,
+            rgba(127, 127, 127, 0.1) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
     }
 }
 
@@ -344,149 +913,6 @@ code {
     gap: 12px;
 }
 
-/* ── Panel-specific styles (merged from feature branch) ───── */
-
-/* CSS custom properties for panel color tokens */
-:root {
-    --ff-green: #4caf50;
-    --ff-red: #f44336;
-    --ff-yellow: #ff9800;
-    --ff-blue: #2196f3;
-}
-
-.muted {
-    color: var(--vscode-descriptionForeground);
-    font-size: 0.9em;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 32px 16px;
-    opacity: 0.7;
-}
-
-/* Small badge variant */
-.badge-sm {
-    font-size: 0.7em;
-    padding: 1px 7px;
-}
-
-/* Background-color category badges (used by panels) */
-.badge-syntax-error { background: var(--ff-yellow); color: #000; }
-.badge-runtime-error { background: var(--ff-red); }
-.badge-logic-error { background: var(--ff-blue); }
-
-.badge-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-/* Diff view */
-.diff-view {
-    background: var(--vscode-editor-background);
-    border: 1px solid var(--vscode-panel-border, #444);
-    border-radius: 4px;
-    padding: 10px;
-    font-family: var(--vscode-editor-font-family, monospace);
-    font-size: var(--vscode-editor-font-size, 12px);
-    overflow-x: auto;
-    white-space: pre;
-    line-height: 1.6;
-}
-
-.diff-add { color: var(--ff-green); }
-.diff-del { color: var(--ff-red); }
-.diff-hunk { color: var(--vscode-descriptionForeground); font-style: italic; }
-.diff-meta { color: var(--vscode-descriptionForeground); }
-
-/* Prism token-level syntax highlighting (VS Code-aligned colors) */
-.token.keyword { color: #c586c0; }
-.token.string,
-.token.template-string { color: #ce9178; }
-.token.number { color: #b5cea8; }
-.token.boolean { color: #569cd6; }
-.token.function { color: #dcdcaa; }
-.token.class-name { color: #4ec9b0; }
-.token.operator { color: #d4d4d4; }
-.token.punctuation { color: #d4d4d4; }
-.token.comment { color: #6a9955; font-style: italic; }
-.token.tag { color: #569cd6; }
-.token.attr-name { color: #9cdcfe; }
-.token.attr-value { color: #ce9178; }
-.token.constant { color: #4fc1ff; }
-.token.builtin { color: #4ec9b0; }
-.token.parameter { color: #9cdcfe; }
-.token.property { color: #9cdcfe; }
-.token.regex { color: #d16969; }
-
-/* Ensure diff line colors take priority over token colors for add/del background */
-.diff-add .token { opacity: 0.85; }
-.diff-del .token { opacity: 0.85; }
-
-.takeaway {
-    font-style: italic;
-    border-left: 3px solid var(--ff-blue);
-    padding-left: 10px;
-}
-
-/* Quiz button styles (panel variant) */
-.quiz-option:disabled {
-    cursor: default;
-    opacity: 0.6;
-}
-
-.quiz-correct { color: var(--ff-green); font-weight: 600; }
-.quiz-incorrect { color: var(--ff-red); font-weight: 600; }
-
-/* Bar chart (dashboard) */
-.bar-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 6px 0;
-}
-
-.bar-label {
-    width: 100px;
-    font-size: 0.85em;
-    text-align: right;
-    flex-shrink: 0;
-}
-
-.bar-track {
-    flex: 1;
-    height: 18px;
-    background: var(--vscode-editor-background);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.3s;
-}
-
-.bar-syntax-error { background: var(--ff-yellow); }
-.bar-runtime-error { background: var(--ff-red); }
-.bar-logic-error { background: var(--ff-blue); }
-
-.bar-count {
-    width: 24px;
-    font-size: 0.85em;
-    font-weight: 600;
-}
-
-.bug-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 0;
-    font-size: 0.85em;
-}
-
 /* ── TTS Read Aloud button ───────────────────────────────── */
 .tts-btn {
     display: inline-flex;
@@ -506,4 +932,23 @@ code {
 
 .tts-btn:hover {
     opacity: 0.85;
+}
+
+/* ── Scrollbar Styling ─────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--vscode-scrollbarSlider-background, rgba(127, 127, 127, 0.3));
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--vscode-scrollbarSlider-hoverBackground, rgba(127, 127, 127, 0.5));
 }
