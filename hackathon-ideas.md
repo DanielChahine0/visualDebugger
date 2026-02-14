@@ -68,11 +68,15 @@ AI coding tools made students faster but not smarter. Every accepted AI fix is a
 | Layer | Technology | Why |
 |-------|-----------|-----|
 | **Extension** | VS Code Extension API (TypeScript) | Native integration, webview panels for UI |
-| **Live Preview** | VS Code Webview + embedded iframe (localhost dev server) | Shows before/after of web app in real-time |
-| **Diff Visualization** | `diff` library (npm) + custom syntax highlighting in webview | Clean, readable visual diffs |
-| **LLM Pipeline** | Claude API or GPT-4o | Bug classification, explanation generation, quiz question generation, concept linking |
-| **Bug Dashboard** | Recharts or Chart.js in VS Code webview panel | Heatmaps, trend charts, category breakdowns |
-| **State/Storage** | VS Code `globalState` API or local SQLite (via `better-sqlite3`) | Persist bug history across sessions |
+| **Bundler** | esbuild | Industry standard for VS Code extensions, 100x faster than webpack |
+| **Live Preview** | VS Code Webview + embedded iframe (DigitalOcean or localhost) | Shows before/after of web app in real-time |
+| **Diff Visualization** | `diff` (compute) + `diff2html` (render) | Syntax-highlighted side-by-side diffs out of the box |
+| **LLM Pipeline** | Gemini API (primary), Claude API (fallback) | Bug classification, explanations, quiz gen. Targets MLH Gemini prize |
+| **TTS** | ElevenLabs API | "Read aloud" for explanations. Targets MLH ElevenLabs prize |
+| **Bug Dashboard** | Chart.js v4 in VS Code webview panel | Canvas-based, no framework dependency, small bundle |
+| **Webview UI** | `@vscode-elements/elements` (Lit-based) | Replaced deprecated webview-ui-toolkit. Native VS Code look-and-feel |
+| **State/Storage** | MongoDB Atlas (primary) + VS Code `globalState` (fallback) | Cross-device persistence. Targets MLH MongoDB prize |
+| **Demo Hosting** | DigitalOcean App Platform | Production deployment. Targets MLH DigitalOcean prize |
 | **Scaffolding** | Yeoman generator (`yo code`) | Fast VS Code extension bootstrap |
 
 ---

@@ -127,17 +127,22 @@ SO THAT I know what concepts to study next.
 └────────────┼──────────────────────────────────────┘
              │
              ▼
-    ┌─────────────────┐
-    │   LLM API       │
-    │   (Claude/GPT)  │
-    │                 │
-    │  Input: diff    │
-    │  Output: JSON   │
-    │  - category     │
-    │  - explanation  │
-    │  - concept      │
+    ┌─────────────────┐     ┌─────────────────┐
+    │   Gemini API    │     │  MongoDB Atlas   │
+    │   (Primary LLM) │     │  (Bug History)   │
+    │                 │     │                 │
+    │  Input: diff    │     │  - categories   │
+    │  Output: JSON   │     │  - timestamps   │
+    │  - category     │     │  - explanations │
+    │  - explanation  │     │  - quiz results │
+    │  - concept      │     └─────────────────┘
     │  - quiz         │
-    └─────────────────┘
+    └─────────────────┘     ┌─────────────────┐
+                            │  ElevenLabs     │
+                            │  (TTS - P1)     │
+                            │  Input: text    │
+                            │  Output: audio  │
+                            └─────────────────┘
 ```
 
 ### Key Technical Decisions
@@ -145,12 +150,17 @@ SO THAT I know what concepts to study next.
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Extension type | VS Code Webview Extension | Need rich UI panels (diff, quiz, dashboard) — webviews are the only way |
-| Diff computation | `diff` npm library | Lightweight, runs in extension host, no external dependencies |
-| LLM provider | Claude API (primary), GPT-4o (fallback) | Claude excels at structured JSON output and instruction-following |
-| Dashboard rendering | Chart.js in webview | Lighter than Recharts for a standalone webview context (no React dependency in webview needed) |
-| Webview framework | Vanilla HTML/CSS/JS or lightweight (htm + preact) | Keep webview bundle small and fast. No heavy framework needed for 3 panels. |
-| State storage | VS Code `globalState` + in-memory array | Simple, no external DB. Seed data loaded on activation for demo. |
-| Live preview | Iframe to localhost dev server | Simplest approach — just embed the running app. Refreshes on postMessage from extension. |
+| Bundler | **esbuild** | Industry standard for VS Code extensions. 100x faster than webpack, builds extension host + webview in parallel |
+| Diff computation | **`diff`** npm library + **`diff2html`** for rendering | `diff` computes diffs, `diff2html` renders syntax-highlighted side-by-side/inline diffs out of the box |
+| LLM provider | **Gemini API** (primary), Claude API (fallback) | Targets MLH "Best Use of Gemini API" prize. Gemini handles structured JSON output well |
+| Dashboard rendering | **Chart.js v4** in webview | Canvas-based, no framework dependency, small bundle, proven in VS Code webviews |
+| Webview framework | **`@vscode-elements/elements`** (Lit-based) | Replaced deprecated `@vscode/webview-ui-toolkit`. ~5kb, native VS Code look-and-feel, used by GitLens |
+| State storage | **MongoDB Atlas** (primary) + VS Code `globalState` (offline fallback) | Targets MLH "Best Use of MongoDB Atlas" prize. Enables cross-device persistence and richer querying |
+| Secrets | **`context.secrets`** API | Encrypted storage for API keys (Gemini, MongoDB, ElevenLabs) |
+| TTS | **ElevenLabs API** (P1) | "Read aloud" for bug explanations. Targets MLH "Best Use of ElevenLabs" prize. Accessibility angle |
+| Demo app hosting | **DigitalOcean App Platform** | Targets MLH "Best Use of DigitalOcean" prize. Shows production-ready deployment |
+| Live preview | Iframe to localhost dev server (or DigitalOcean URL) | Simplest approach — embed the running app. Refreshes on postMessage from extension |
+| Scaffolding | **`yo code`** (Yeoman) | Still the official standard, no real competitor |
 
 ---
 
@@ -194,7 +204,7 @@ SO THAT I know what concepts to study next.
 
 | Task | Priority | Hours | Dependencies |
 |------|----------|-------|-------------|
-| T17: Set up LLM API integration module (Claude SDK, request/response types, error handling) | P0 | 1.5h | None |
+| T17: Set up LLM API integration module (Gemini SDK, request/response types, error handling) | P0 | 1.5h | None |
 | T18: Write and test bug classification prompt (few-shot, structured JSON output) | P0 | 3h | T17 |
 | T19: Test prompt against 10+ different bug diffs, iterate on quality | P0 | 2h | T18 |
 | T20: Build demo React app (simple UI — buttons, forms, cards) | P0 | 2h | None |
@@ -306,12 +316,14 @@ Hour 21─24: REHEARSE + SUBMIT                      │
 | # | Risk | Likelihood | Impact | Mitigation | Owner |
 |---|------|-----------|--------|-----------|-------|
 | R1 | VS Code webview takes too long to set up | Medium | High | Start with `yo code` template. Eng 1 owns this exclusively for first 4h. Test webview "hello world" in first 30 min. | Eng 1 |
-| R2 | LLM returns inconsistent/bad JSON | Medium | High | Use Claude with `response_format: json`. Add JSON schema validation. Have 3 fallback hardcoded responses for demo bugs. | Eng 3 |
+| R2 | LLM returns inconsistent/bad JSON | Medium | High | Use Gemini with structured output mode. Add JSON schema validation. Have 3 fallback hardcoded responses for demo bugs. | Eng 3 |
 | R3 | Diff detection misses changes or fires incorrectly | Medium | Medium | Use `onWillSaveTextDocument` (captures before) + `onDidSaveTextDocument` (captures after). Test early with manual saves. | Eng 1 |
 | R4 | Live preview iframe doesn't refresh reliably | Low | Medium | Fallback: remove live preview from demo, show diff + explanation only. Or use screenshots. | Eng 1 |
 | R5 | Demo breaks on stage | Medium | Critical | Pre-plant bugs tested 10+ times. Pre-record backup video. Script every click. | Eng 3 |
 | R6 | Run out of time on P1 features | Medium | Low | P0 features alone make a complete demo. Quiz and live preview are enhancement, not core. | All |
-| R7 | LLM API rate limits or downtime | Low | Critical | Cache LLM responses for demo bugs locally. If API is down, serve cached responses. | Eng 3 |
+| R7 | LLM API rate limits or downtime | Low | Critical | Cache Gemini responses for demo bugs locally. If API is down, fall back to Claude API, then serve cached responses. | Eng 3 |
+| R9 | MongoDB Atlas connection issues during demo | Low | Medium | Fall back to VS Code globalState for offline storage. Seed data works either way. | Eng 1 |
+| R10 | ElevenLabs TTS adds latency to demo | Low | Low | TTS is P1 and optional. Pre-cache audio for demo bugs. Skip button always available. | Eng 2 |
 | R8 | Team burnout / coordination breakdown | Medium | Medium | Mandatory break at hour 12 (30 min). Sync standups at hours 6, 10, 14, 18. Clear ownership per task. | All |
 
 ---
@@ -356,19 +368,21 @@ flowfixer/
 │   ├── src/
 │   │   ├── extension.ts          # Entry point, activation, command registration
 │   │   ├── diffEngine.ts         # File watching, before/after capture, diff computation
-│   │   ├── llmClient.ts          # Claude/GPT API calls, JSON parsing, caching
+│   │   ├── llmClient.ts          # Gemini API calls, JSON parsing, caching (Claude fallback)
+│   │   ├── ttsClient.ts          # ElevenLabs TTS API integration
+│   │   ├── storage.ts            # MongoDB Atlas client + globalState fallback
 │   │   ├── panels/
 │   │   │   ├── DiffPanel.ts      # Diff webview panel provider
 │   │   │   ├── QuizPanel.ts      # Quiz webview panel provider
 │   │   │   └── DashboardPanel.ts # Dashboard webview panel provider
 │   │   ├── webview/
-│   │   │   ├── diff.html         # Diff panel HTML/CSS/JS
-│   │   │   ├── quiz.html         # Quiz panel HTML/CSS/JS
-│   │   │   ├── dashboard.html    # Dashboard panel HTML/CSS/JS (Chart.js)
+│   │   │   ├── diff.html         # Diff panel (diff2html + @vscode-elements)
+│   │   │   ├── quiz.html         # Quiz panel (@vscode-elements)
+│   │   │   ├── dashboard.html    # Dashboard panel (Chart.js v4)
 │   │   │   └── styles.css        # Shared webview styles
-│   │   ├── storage.ts            # Bug history state management (globalState)
 │   │   ├── seedData.ts           # Pre-loaded demo bug history
 │   │   └── types.ts              # Shared TypeScript interfaces
+│   ├── esbuild.js                # Build script (extension + webview targets)
 │   ├── package.json              # Extension manifest (contributes, activationEvents)
 │   └── tsconfig.json
 │
@@ -394,12 +408,41 @@ flowfixer/
 
 ---
 
-## 16. API Keys & Accounts Needed
+## 16. Target Prizes
+
+### Primary Targets (no extra code needed)
+| Prize | Strategy |
+|-------|----------|
+| **Best Overall Hack** | Build it well — ambitious, technical, great narrative |
+| **Best UI & UX Designed Hack** | Polish webview panels, smooth transitions, dark theme compat |
+| **Best Community Impact Hack** | Emphasize "anti-vibe-coding" education narrative in pitch |
+
+### Sponsor Prize Targets (integrated into tech stack)
+| Prize | Integration | Effort |
+|-------|-------------|--------|
+| **MLH Best Use of Gemini API** | Gemini as primary LLM for bug classification | Core (already in stack) |
+| **MLH Best Use of MongoDB Atlas** | Atlas for bug history persistence | ~2h |
+| **MLH Best Use of ElevenLabs** | TTS "read aloud" on explanation cards | ~1-2h (P1) |
+| **MLH Best Use of DigitalOcean** | Deploy demo app on App Platform | ~1h |
+
+### Not Targeting
+| Prize | Reason |
+|-------|--------|
+| Best Use of Solana | No blockchain angle |
+| Best Use of Snowflake API | Data warehouse doesn't fit |
+| Most Useless Hack | FlowFixer is useful |
+
+---
+
+## 17. API Keys & Accounts Needed
 
 | Service | What For | Setup Time | Who |
 |---------|---------|-----------|-----|
-| **Anthropic (Claude API)** | Bug classification LLM | 5 min (if account exists) | Eng 3 |
-| **OpenAI (GPT-4o)** — backup | Fallback LLM | 5 min | Eng 3 |
+| **Google (Gemini API)** | Primary LLM for bug classification | 5 min | Eng 3 |
+| **Anthropic (Claude API)** — fallback | Backup LLM | 5 min | Eng 3 |
+| **MongoDB Atlas** | Bug history database (free tier) | 10 min | Eng 1 |
+| **ElevenLabs** | TTS for explanation read-aloud | 5 min | Eng 2 |
+| **DigitalOcean** | Demo app hosting ($200 free credits) | 10 min | Eng 1 |
 | **GitHub** | Repo hosting | Already have | Eng 1 |
 | **Node.js 18+** | Extension + demo app runtime | Already installed | All |
 | **VS Code** | Development + demo | Already installed | All |
