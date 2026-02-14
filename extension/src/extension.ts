@@ -155,6 +155,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   async function handlePhase1(error: CapturedError): Promise<void> {
     console.log(`${LOG} Phase 1: error detected - ${error.message}`);
     lastError = error;
+    // New error cycle starts here. Clear any stale Phase 2 review so users
+    // don't see old fix explanations before a new diff is detected.
+    diffPanel.postMessage({ type: "clear" });
 
     diffEngine.startTracking(error.file);
     updateStatus("analyzingError");
@@ -474,4 +477,3 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 export function deactivate(): void {
   console.log(`${LOG} deactivated`);
 }
-

@@ -93,6 +93,13 @@ export class DiffEngine implements vscode.Disposable {
    *  Captures a snapshot of the file NOW so we have the true "before" state,
    *  even if an AI tool edits the document before the next save. */
   startTracking(fileUri: string): void {
+    // Keep one active tracking target at a time so we don't lose the original
+    // file before its fix diff is computed.
+    if (this.tracking && this.trackedUri && this.trackedUri !== fileUri) {
+      console.log(`${LOG} ignoring startTracking(${fileUri}) — currently tracking ${this.trackedUri}`);
+      return;
+    }
+
     // If a debounce timer is pending (fix about to be detected), don't overwrite
     if (this.diagDebounceTimer && this.trackedUri !== fileUri) {
       console.log(`${LOG} ignoring startTracking(${fileUri}) — pending detection for ${this.trackedUri}`);
@@ -107,8 +114,11 @@ export class DiffEngine implements vscode.Disposable {
       (d) => d.uri.fsPath === fileUri
     );
     if (doc) {
-      this.beforeSaveContent.set(doc.uri.toString(), doc.getText());
-      console.log(`${LOG} captured initial snapshot for ${doc.fileName}`);
+      const key = doc.uri.toString();
+      if (!this.beforeSaveContent.has(key)) {
+        this.beforeSaveContent.set(key, doc.getText());
+        console.log(`${LOG} captured initial snapshot for ${doc.fileName}`);
+      }
     } else {
       // If the file isn't currently in textDocuments, load it so we still have
       // a reliable baseline when diagnostics clear.
@@ -162,6 +172,7 @@ export class DiffEngine implements vscode.Disposable {
     const before = this.beforeSaveContent.get(key);
 
     if (before === undefined) {
+      console.log(`${LOG} no baseline snapshot for ${doc.fileName}; skipping diff`);
       return;
     }
 
@@ -169,7 +180,7 @@ export class DiffEngine implements vscode.Disposable {
 
     // Skip if content hasn't actually changed
     if (before === after) {
-      this.beforeSaveContent.delete(key);
+      // Keep the baseline snapshot; saves can happen before AI applies the fix.
       return;
     }
 
