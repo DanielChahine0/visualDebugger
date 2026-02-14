@@ -107,7 +107,7 @@ code {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
-    border-bottom: 1px solid var(--vscode-widget-border);
+    border-bottom: none;
     padding-bottom: 12px;
 }
 
@@ -451,4 +451,32 @@ code {
 .btn-toggle.active {
     background-color: var(--vscode-button-background);
     color: var(--vscode-button-foreground);
+}
+
+/* ── Stats Grid (Responsive) ───────────────────────────────── */
+.stats-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 12px;
+    text-align: center;
+}
+
+.stat-item {
+    flex: 1;
+    min-width: 80px;
+    /* Force wrap if too small */
+}
+
+.stat-value {
+    font-size: 1.8em;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--vscode-foreground);
+}
+
+.stat-label {
+    font-size: 0.85em;
+    color: var(--vscode-descriptionForeground);
+    font-weight: 500;
 }
