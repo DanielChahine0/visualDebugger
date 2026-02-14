@@ -8,7 +8,8 @@
       "Bash(npx vite build)",
       "Bash(npm run package:*)",
       "Bash(npx vitest run)",
-      "Bash(npx vsce:*)"
+      "Bash(npx vsce:*)",
+      "Bash(git merge:*)"
     ]
   }
 }
