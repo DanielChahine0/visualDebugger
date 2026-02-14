@@ -84,6 +84,8 @@ export type ExtToWebviewMessage =
   | { type: "showError"; data: ErrorExplanation & { raw: CapturedError } }
   | { type: "showDiff"; data: DiffExplanation & { diff: CapturedDiff } }
   | { type: "showDashboard"; data: { bugs: BugRecord[] } }
+  | { type: "playAudio"; data: { audio: string } }
+  | { type: "ttsError"; data: { message: string } }
   | { type: "clear" };
 
 /** Messages from webview -> extension host */

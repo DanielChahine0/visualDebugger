@@ -24,6 +24,7 @@
     "onCommand:flowfixer.showDashboard",
     "onCommand:flowfixer.setGeminiKey",
     "onCommand:flowfixer.setMongoUri",
+    "onCommand:flowfixer.setElevenLabsKey",
     "onCommand:flowfixer.analyzeCurrentFile"
   ],
   "main": "./dist/extension.js",
@@ -48,6 +49,10 @@
       {
         "command": "flowfixer.setMongoUri",
         "title": "Visual Debugger: Set MongoDB Atlas URI"
+      },
+      {
+        "command": "flowfixer.setElevenLabsKey",
+        "title": "Visual Debugger: Set ElevenLabs API Key"
       },
       {
         "command": "flowfixer.analyzeCurrentFile",

@@ -54,7 +54,7 @@ export class ErrorPanelProvider implements vscode.WebviewViewProvider {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+    content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; media-src data:;">
   <link rel="stylesheet" href="${styleUri}">
   <title>Error Explanation</title>
 </head>
@@ -69,6 +69,7 @@ export class ErrorPanelProvider implements vscode.WebviewViewProvider {
         <span id="category-badge" class="badge"></span>
         <span id="location" class="muted"></span>
       </div>
+      <button id="tts-btn" class="tts-btn" title="Read explanation aloud">Read Aloud</button>
       <section>
         <h3>What happened?</h3>
         <p id="explanation"></p>
@@ -97,9 +98,42 @@ export class ErrorPanelProvider implements vscode.WebviewViewProvider {
     const vscode = acquireVsCodeApi();
     vscode.postMessage({ type: 'ready' });
 
+    // --- TTS State ---
+    let ttsAudio = null;
+    let ttsSpeech = null;
+    const ttsBtn = document.getElementById('tts-btn');
+
+    function stopTts() {
+      if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+      if (ttsSpeech) { speechSynthesis.cancel(); ttsSpeech = null; }
+      ttsBtn.textContent = 'Read Aloud';
+    }
+
+    function getExplanationText() {
+      const parts = [
+        document.getElementById('explanation').textContent,
+        document.getElementById('how-to-fix').textContent,
+        document.getElementById('how-to-prevent').textContent,
+        document.getElementById('best-practices').textContent
+      ];
+      return parts.filter(Boolean).join('. ');
+    }
+
+    ttsBtn.addEventListener('click', () => {
+      if (ttsBtn.textContent === 'Stop') {
+        stopTts();
+        return;
+      }
+      const text = getExplanationText();
+      if (!text) return;
+      ttsBtn.textContent = 'Stop';
+      vscode.postMessage({ type: 'requestTts', text: text });
+    });
+
     window.addEventListener('message', (event) => {
       const msg = event.data;
       if (msg.type === 'showError') {
+        stopTts();
         document.getElementById('empty-state').style.display = 'none';
         document.getElementById('error-content').style.display = 'block';
         const d = msg.data;
@@ -142,7 +176,34 @@ export class ErrorPanelProvider implements vscode.WebviewViewProvider {
             opts.appendChild(btn);
           });
         }
+      } else if (msg.type === 'playAudio') {
+        ttsAudio = new Audio('data:audio/mpeg;base64,' + msg.data.audio);
+        ttsAudio.play();
+        ttsAudio.addEventListener('ended', () => stopTts());
+        ttsAudio.addEventListener('error', () => {
+          stopTts();
+          // Fall back to browser speech
+          const text = getExplanationText();
+          if (text) {
+            ttsSpeech = new SpeechSynthesisUtterance(text);
+            ttsSpeech.onend = () => stopTts();
+            speechSynthesis.speak(ttsSpeech);
+            ttsBtn.textContent = 'Stop';
+          }
+        });
+      } else if (msg.type === 'ttsError') {
+        // Fall back to browser SpeechSynthesis
+        const text = getExplanationText();
+        if (text) {
+          ttsSpeech = new SpeechSynthesisUtterance(text);
+          ttsSpeech.onend = () => stopTts();
+          speechSynthesis.speak(ttsSpeech);
+          ttsBtn.textContent = 'Stop';
+        } else {
+          stopTts();
+        }
       } else if (msg.type === 'clear') {
+        stopTts();
         document.getElementById('empty-state').style.display = 'block';
         document.getElementById('error-content').style.display = 'none';
       }

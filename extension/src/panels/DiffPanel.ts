@@ -54,7 +54,7 @@ export class DiffPanelProvider implements vscode.WebviewViewProvider {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+    content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; media-src data:;">
   <link rel="stylesheet" href="${styleUri}">
   <title>Diff Review</title>
 </head>
@@ -65,6 +65,7 @@ export class DiffPanelProvider implements vscode.WebviewViewProvider {
       <p class="muted">After an error is explained, Visual Debugger will track the next file save to show what changed.</p>
     </div>
     <div id="diff-content" style="display:none;">
+      <button id="tts-btn" class="tts-btn" title="Read explanation aloud">Read Aloud</button>
       <h3>What the AI changed</h3>
       <pre id="diff-view" class="diff-view"></pre>
       <section>
