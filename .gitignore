@@ -1,0 +1,9 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+/extension/node_modules/
+/demo-app/node_modules/
+
+# Build artifacts
+*.vsix
+

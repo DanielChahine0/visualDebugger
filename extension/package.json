@@ -1,0 +1,94 @@
+{
+  "name": "flowfixer",
+  "displayName": "FlowFixer",
+  "description": "AI Bug Tutor — explains errors before the fix, reviews AI changes after",
+  "version": "0.1.0",
+  "publisher": "flowfixer-team",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Education",
+    "Debuggers"
+  ],
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onLanguage:javascriptreact",
+    "onLanguage:typescriptreact"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "flowfixer.showErrorPanel",
+        "title": "FlowFixer: Show Error Explanation"
+      },
+      {
+        "command": "flowfixer.showDiffPanel",
+        "title": "FlowFixer: Show Diff Review"
+      },
+      {
+        "command": "flowfixer.showDashboard",
+        "title": "FlowFixer: Show Bug Dashboard"
+      },
+      {
+        "command": "flowfixer.setGeminiKey",
+        "title": "FlowFixer: Set Gemini API Key"
+      },
+      {
+        "command": "flowfixer.setMongoUri",
+        "title": "FlowFixer: Set MongoDB Atlas URI"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "flowfixer",
+          "title": "FlowFixer",
+          "icon": "$(bug)"
+        }
+      ]
+    },
+    "views": {
+      "flowfixer": [
+        {
+          "type": "webview",
+          "id": "flowfixer.errorPanel",
+          "name": "Error Explanation"
+        },
+        {
+          "type": "webview",
+          "id": "flowfixer.diffPanel",
+          "name": "Diff Review"
+        },
+        {
+          "type": "webview",
+          "id": "flowfixer.dashboardPanel",
+          "name": "Bug Dashboard"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "vsce package --no-dependencies",
+    "lint": "tsc --noEmit && tsc --noEmit -p tsconfig.webview.json"
+  },
+  "devDependencies": {
+    "@types/diff": "^5.2.0",
+    "@types/node": "^20.0.0",
+    "@types/prismjs": "^1.26.6",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "diff": "^5.2.0",
+    "mongodb": "^6.3.0",
+    "prismjs": "^1.30.0"
+  }
+}
