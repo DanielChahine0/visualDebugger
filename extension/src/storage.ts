@@ -76,6 +76,10 @@ class MongoStorage implements StorageProvider {
     return this.collection.find({}).sort({ timestamp: 1 }).toArray();
   }
 
+  async ping(): Promise<boolean> {
+    return this.connect();
+  }
+
   dispose(): void {
     if (this.client) {
       this.client.close().catch(() => {});
@@ -100,6 +104,16 @@ export class FlowFixerStorage implements StorageProvider {
     }
   }
 
+  setMongoUri(mongoUri?: string): void {
+    this.mongo?.dispose();
+    this.mongo = mongoUri ? new MongoStorage(mongoUri) : null;
+  }
+
+  async testMongoConnection(): Promise<boolean> {
+    if (!this.mongo) return false;
+    return this.mongo.ping();
+  }
+
   async save(record: BugRecord): Promise<void> {
     // Always save to globalState
     await this.globalStateStorage.save(record);
@@ -115,15 +129,26 @@ export class FlowFixerStorage implements StorageProvider {
   }
 
   async getAll(): Promise<BugRecord[]> {
-    // Try MongoDB first for richer data
+    const local = await this.globalStateStorage.getAll();
+
+    // Try MongoDB first for richer/cross-device data
     if (this.mongo) {
       try {
-        return await this.mongo.getAll();
+        const remote = await this.mongo.getAll();
+        const merged = [...remote];
+        const seen = new Set(remote.map((bug) => bug.id));
+        for (const bug of local) {
+          if (!seen.has(bug.id)) {
+            merged.push(bug);
+          }
+        }
+        merged.sort((a, b) => a.timestamp - b.timestamp);
+        return merged;
       } catch {
         console.warn(`${LOG} MongoDB read failed, falling back to globalState`);
       }
     }
-    return this.globalStateStorage.getAll();
+    return local;
   }
 
   dispose(): void {

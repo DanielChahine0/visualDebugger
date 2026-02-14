@@ -7,6 +7,7 @@ import { ErrorPanelProvider } from "./panels/ErrorPanel";
 import { DiffPanelProvider } from "./panels/DiffPanel";
 import { DashboardPanelProvider } from "./panels/DashboardPanel";
 import { CapturedError, BugRecord } from "./types";
+import { getSeedBugRecords } from "./seedData";
 
 const LOG = "[FlowFixer]";
 
@@ -38,6 +39,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.window.registerWebviewViewProvider(DiffPanelProvider.viewType, diffPanel),
     vscode.window.registerWebviewViewProvider(DashboardPanelProvider.viewType, dashboardPanel)
   );
+
+  // --- Helper: get bugs with seed data fallback ---
+  async function getBugsWithFallback(): Promise<BugRecord[]> {
+    const stored = await storage.getAll();
+    return stored.length > 0 ? stored : getSeedBugRecords();
+  }
+
+  // --- Pre-populate dashboard on activation ---
+  // Use setImmediate-style delay so the webview has time to resolve
+  setTimeout(async () => {
+    const bugs = await getBugsWithFallback();
+    dashboardPanel.postMessage({ type: "showDashboard", data: { bugs } });
+  }, 500);
 
   // --- Track last error for Phase 2 correlation ---
   let lastError: CapturedError | undefined;
@@ -84,7 +98,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await storage.save(record);
 
       // Update dashboard
-      const allBugs = await storage.getAll();
+      const allBugs = await getBugsWithFallback();
       dashboardPanel.postMessage({
         type: "showDashboard",
         data: { bugs: allBugs },
@@ -152,7 +166,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.commands.registerCommand("flowfixer.showDashboard", async () => {
       vscode.commands.executeCommand("flowfixer.dashboardPanel.focus");
-      const bugs = await storage.getAll();
+      const bugs = await getBugsWithFallback();
       dashboardPanel.postMessage({
         type: "showDashboard",
         data: { bugs },
@@ -182,7 +196,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       });
       if (uri) {
         await context.secrets.store("flowfixer.mongoUri", uri);
-        vscode.window.showInformationMessage("FlowFixer: MongoDB URI saved. Restart extension to connect.");
+        storage.setMongoUri(uri);
+        const connected = await storage.testMongoConnection();
+        if (connected) {
+          vscode.window.showInformationMessage("FlowFixer: MongoDB URI saved and connected.");
+        } else {
+          vscode.window.showWarningMessage("FlowFixer: URI saved, but connection failed. Using local fallback storage.");
+        }
       }
     }),
 

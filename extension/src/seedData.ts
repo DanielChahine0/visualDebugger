@@ -50,3 +50,41 @@ export const SEED_BUGS: BugEntry[] = [
 export function getSeedBugs(): BugEntry[] {
     return [...SEED_BUGS];
 }
+
+/**
+ * Converts seed bugs into the BugRecord[] format expected by the dashboard.
+ * Used as a fallback when no real bugs have been recorded yet, so the
+ * dashboard always has data to display in a demo.
+ */
+import { BugRecord, BugCategory, ErrorExplanation } from "./types";
+
+const CATEGORY_MAP: Record<BugEntry["category"], BugCategory> = {
+    Syntax: "Syntax Error",
+    Logic: "Logic Error",
+    Runtime: "Runtime Error",
+};
+
+export function getSeedBugRecords(): BugRecord[] {
+    return SEED_BUGS.map((entry): BugRecord => {
+        const category = CATEGORY_MAP[entry.category];
+        const location = `${entry.file}:${entry.line}`;
+
+        const explanation: ErrorExplanation = {
+            category,
+            location,
+            explanation: entry.error,
+            howToFix: "",
+            howToPrevent: "",
+            bestPractices: "",
+        };
+
+        return {
+            id: `seed_${entry.id}`,
+            category,
+            file: entry.file,
+            errorMessage: entry.error,
+            explanation,
+            timestamp: new Date(entry.timestamp).getTime(),
+        };
+    });
+}

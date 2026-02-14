@@ -1,20 +1,20 @@
 /**
- * ttsClient.ts — ElevenLabs TTS Integration
- * Owner: Engineer 2 (UI/Webview Lead)
+ * ttsClient.ts — ElevenLabs TTS Integration (Node.js / Extension Host)
  *
- * Provides text-to-speech "read aloud" functionality for bug explanations.
- * Uses ElevenLabs API for natural-sounding speech.
+ * Fetches TTS audio from ElevenLabs and returns base64-encoded audio data.
+ * Runs in the extension host (Node.js), NOT in the webview.
  *
- * USAGE (from panels/ErrorPanel.ts or panels/DiffPanel.ts):
- *   import { speakText, stopSpeaking } from './ttsClient';
- *   await speakText("Your explanation text here");
+ * Flow:
+ *   1. Webview sends `requestTts` message to extension host
+ *   2. Extension host calls fetchTtsAudio() (this module)
+ *   3. Extension host sends base64 audio back to webview via `playAudio` message
+ *   4. Webview plays audio using the browser Audio API
  *
  * API KEY:
- *   Stored via VS Code context.secrets API (Engineer 1 handles this).
- *   For development, set ELEVENLABS_API_KEY environment variable.
+ *   Stored via VS Code context.secrets API under 'flowfixer.elevenLabsKey'.
+ *   Set via the "FlowFixer: Set ElevenLabs Key" command.
  */
 
-// ElevenLabs voices — "Rachel" is clear and educational-sounding
 const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Rachel
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
@@ -25,20 +25,15 @@ export interface TTSOptions {
     similarityBoost?: number;
 }
 
-let currentAudio: HTMLAudioElement | null = null;
-
 /**
- * Speaks the given text using ElevenLabs TTS.
- * Returns a promise that resolves when the audio finishes (or rejects on error).
+ * Fetches TTS audio from ElevenLabs and returns base64-encoded audio data.
+ * Runs in the extension host (Node.js).
  */
-export async function speakText(
+export async function fetchTtsAudio(
     text: string,
     apiKey: string,
     options: TTSOptions = {}
-): Promise<void> {
-    // Stop any currently playing audio
-    stopSpeaking();
-
+): Promise<string> {
     const voiceId = options.voiceId || DEFAULT_VOICE_ID;
     const url = `${API_BASE}/text-to-speech/${voiceId}`;
 
@@ -63,39 +58,6 @@ export async function speakText(
         throw new Error(`ElevenLabs TTS failed (${response.status}): ${errorBody}`);
     }
 
-    const audioBlob = await response.blob();
-    const audioUrl = URL.createObjectURL(audioBlob);
-
-    return new Promise((resolve, reject) => {
-        currentAudio = new Audio(audioUrl);
-        currentAudio.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-            currentAudio = null;
-            resolve();
-        };
-        currentAudio.onerror = (err) => {
-            URL.revokeObjectURL(audioUrl);
-            currentAudio = null;
-            reject(new Error('Audio playback failed'));
-        };
-        currentAudio.play().catch(reject);
-    });
-}
-
-/**
- * Stops any currently playing TTS audio.
- */
-export function stopSpeaking(): void {
-    if (currentAudio) {
-        currentAudio.pause();
-        currentAudio.currentTime = 0;
-        currentAudio = null;
-    }
-}
-
-/**
- * Returns true if TTS audio is currently playing.
- */
-export function isSpeaking(): boolean {
-    return currentAudio !== null && !currentAudio.paused;
+    const buffer = await response.arrayBuffer();
+    return Buffer.from(buffer).toString('base64');
 }

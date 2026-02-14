@@ -72267,6 +72267,9 @@ var MongoStorage = class {
     }
     return this.collection.find({}).sort({ timestamp: 1 }).toArray();
   }
+  async ping() {
+    return this.connect();
+  }
   dispose() {
     if (this.client) {
       this.client.close().catch(() => {
@@ -72283,6 +72286,14 @@ var FlowFixerStorage = class {
       this.mongo = new MongoStorage(mongoUri);
     }
   }
+  setMongoUri(mongoUri) {
+    this.mongo?.dispose();
+    this.mongo = mongoUri ? new MongoStorage(mongoUri) : null;
+  }
+  async testMongoConnection() {
+    if (!this.mongo) return false;
+    return this.mongo.ping();
+  }
   async save(record) {
     await this.globalStateStorage.save(record);
     if (this.mongo) {
@@ -72294,14 +72305,24 @@ var FlowFixerStorage = class {
     }
   }
   async getAll() {
+    const local = await this.globalStateStorage.getAll();
     if (this.mongo) {
       try {
-        return await this.mongo.getAll();
+        const remote = await this.mongo.getAll();
+        const merged = [...remote];
+        const seen = new Set(remote.map((bug) => bug.id));
+        for (const bug of local) {
+          if (!seen.has(bug.id)) {
+            merged.push(bug);
+          }
+        }
+        merged.sort((a, b) => a.timestamp - b.timestamp);
+        return merged;
       } catch {
         console.warn(`${LOG4} MongoDB read failed, falling back to globalState`);
       }
     }
-    return this.globalStateStorage.getAll();
+    return local;
   }
   dispose() {
     this.mongo?.dispose();
@@ -72594,6 +72615,45 @@ var DashboardPanelProvider = class {
     content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
   <link rel="stylesheet" href="${styleUri}">
   <title>Bug Dashboard</title>
+  <style>
+    .trend-wrap {
+      border: 1px solid var(--vscode-widget-border);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--vscode-editor-background);
+    }
+    .trend-svg {
+      width: 100%;
+      height: 140px;
+      display: block;
+    }
+    .trend-axis {
+      stroke: var(--vscode-widget-border);
+      stroke-width: 1;
+    }
+    .trend-line {
+      fill: none;
+      stroke: #4fc3f7;
+      stroke-width: 2.5;
+    }
+    .trend-point {
+      fill: #4fc3f7;
+    }
+    .trend-labels {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 8px;
+      color: var(--vscode-descriptionForeground);
+      font-size: 11px;
+    }
+    .trend-label {
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
 </head>
 <body>
   <div id="root">
@@ -72609,6 +72669,13 @@ var DashboardPanelProvider = class {
       <section>
         <h3>Focus Area</h3>
         <p id="focus-area"></p>
+      </section>
+      <section>
+        <h3>Trend Over Sessions (Last 7 Days)</h3>
+        <div class="trend-wrap">
+          <div id="trend-chart"></div>
+          <div id="trend-labels" class="trend-labels"></div>
+        </div>
       </section>
       <section>
         <h3>Recent Bugs</h3>
@@ -72655,6 +72722,8 @@ var DashboardPanelProvider = class {
           ? 'You struggle most with ' + focus[0] + 's. Focus on understanding these patterns.'
           : 'Keep coding! Patterns will emerge as you encounter more bugs.';
 
+      renderTrendChart(bugs);
+
       // Recent bugs
       const recent = document.getElementById('recent-bugs');
       recent.innerHTML = bugs.slice(-10).reverse().map(b => {
@@ -72666,6 +72735,54 @@ var DashboardPanelProvider = class {
           '<span class="muted">' + time + '</span>' +
           '</div>';
       }).join('');
+    }
+
+    function renderTrendChart(bugs) {
+      const end = new Date();
+      end.setHours(0, 0, 0, 0);
+      const dayStarts = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(end);
+        d.setDate(end.getDate() - i);
+        dayStarts.push(d);
+      }
+
+      const counts = dayStarts.map(() => 0);
+      for (const bug of bugs) {
+        const ts = new Date(bug.timestamp);
+        ts.setHours(0, 0, 0, 0);
+        const index = dayStarts.findIndex(d => d.getTime() === ts.getTime());
+        if (index >= 0) {
+          counts[index]++;
+        }
+      }
+
+      const max = Math.max(...counts, 1);
+      const width = 320;
+      const height = 120;
+      const x0 = 16;
+      const x1 = width - 16;
+      const y0 = 10;
+      const y1 = height - 12;
+
+      const points = counts.map((count, i) => {
+        const x = x0 + ((x1 - x0) * i) / Math.max(6, counts.length - 1);
+        const y = y1 - ((y1 - y0) * count) / max;
+        return { x, y, count };
+      });
+
+      const trendChart = document.getElementById('trend-chart');
+      trendChart.innerHTML = '<svg class="trend-svg" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="Bug trend line chart">' +
+        '<line class="trend-axis" x1="' + x0 + '" y1="' + y1 + '" x2="' + x1 + '" y2="' + y1 + '"></line>' +
+        '<polyline class="trend-line" points="' + points.map(p => p.x + ',' + p.y).join(' ') + '"></polyline>' +
+        points.map(p => '<circle class="trend-point" cx="' + p.x + '" cy="' + p.y + '" r="3"></circle>').join('') +
+        '</svg>';
+
+      const labels = document.getElementById('trend-labels');
+      labels.innerHTML = dayStarts
+        .map(d => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))
+        .map(label => '<span class="trend-label">' + label + '</span>')
+        .join('');
     }
   </script>
 </body>
@@ -72680,6 +72797,55 @@ function getNonce3() {
     text += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return text;
+}
+
+// src/seedData.ts
+var SEED_BUGS = [
+  { id: 1, category: "Runtime", error: "TypeError: Cannot read properties of undefined (reading 'map')", file: "App.tsx", line: 15, timestamp: "2026-02-07T09:15:00Z" },
+  { id: 2, category: "Syntax", error: "SyntaxError: Unexpected token '}'", file: "Header.tsx", line: 23, timestamp: "2026-02-07T10:30:00Z" },
+  { id: 3, category: "Logic", error: "Off-by-one: renders extra undefined item in list", file: "List.tsx", line: 8, timestamp: "2026-02-07T14:45:00Z" },
+  { id: 4, category: "Runtime", error: "ReferenceError: data is not defined", file: "Dashboard.tsx", line: 42, timestamp: "2026-02-08T08:20:00Z" },
+  { id: 5, category: "Syntax", error: "SyntaxError: Unexpected token, expected ','", file: "Form.tsx", line: 31, timestamp: "2026-02-08T11:10:00Z" },
+  { id: 6, category: "Runtime", error: "TypeError: setItems is not a function", file: "App.tsx", line: 20, timestamp: "2026-02-08T15:00:00Z" },
+  { id: 7, category: "Logic", error: "Counter increments by 2 instead of 1", file: "Counter.tsx", line: 12, timestamp: "2026-02-09T09:30:00Z" },
+  { id: 8, category: "Runtime", error: "TypeError: Cannot destructure property 'name' of undefined", file: "Profile.tsx", line: 7, timestamp: "2026-02-09T13:15:00Z" },
+  { id: 9, category: "Syntax", error: "SyntaxError: Missing semicolon", file: "utils.ts", line: 45, timestamp: "2026-02-09T16:40:00Z" },
+  { id: 10, category: "Runtime", error: "TypeError: fetch is not a function", file: "api.ts", line: 3, timestamp: "2026-02-10T10:00:00Z" },
+  { id: 11, category: "Logic", error: "Form submits even when validation fails", file: "Form.tsx", line: 55, timestamp: "2026-02-10T11:25:00Z" },
+  { id: 12, category: "Runtime", error: "RangeError: Maximum call stack size exceeded", file: "Tree.tsx", line: 18, timestamp: "2026-02-10T14:50:00Z" },
+  { id: 13, category: "Logic", error: "Search filter returns wrong results", file: "Search.tsx", line: 22, timestamp: "2026-02-11T09:10:00Z" },
+  { id: 14, category: "Runtime", error: "TypeError: Cannot read properties of null (reading 'value')", file: "Input.tsx", line: 9, timestamp: "2026-02-11T12:30:00Z" },
+  { id: 15, category: "Syntax", error: "SyntaxError: Unterminated string literal", file: "config.ts", line: 15, timestamp: "2026-02-12T08:45:00Z" },
+  { id: 16, category: "Runtime", error: "TypeError: Cannot read properties of undefined (reading 'length')", file: "Table.tsx", line: 30, timestamp: "2026-02-12T13:20:00Z" },
+  { id: 17, category: "Logic", error: "Pagination shows page 0 instead of page 1", file: "Pagination.tsx", line: 14, timestamp: "2026-02-13T10:00:00Z" },
+  { id: 18, category: "Runtime", error: "TypeError: items.filter is not a function", file: "Filter.tsx", line: 27, timestamp: "2026-02-13T15:30:00Z" }
+];
+var CATEGORY_MAP = {
+  Syntax: "Syntax Error",
+  Logic: "Logic Error",
+  Runtime: "Runtime Error"
+};
+function getSeedBugRecords() {
+  return SEED_BUGS.map((entry) => {
+    const category = CATEGORY_MAP[entry.category];
+    const location = `${entry.file}:${entry.line}`;
+    const explanation = {
+      category,
+      location,
+      explanation: entry.error,
+      howToFix: "",
+      howToPrevent: "",
+      bestPractices: ""
+    };
+    return {
+      id: `seed_${entry.id}`,
+      category,
+      file: entry.file,
+      errorMessage: entry.error,
+      explanation,
+      timestamp: new Date(entry.timestamp).getTime()
+    };
+  });
 }
 
 // src/extension.ts
@@ -72703,6 +72869,14 @@ async function activate(context) {
     vscode6.window.registerWebviewViewProvider(DiffPanelProvider.viewType, diffPanel),
     vscode6.window.registerWebviewViewProvider(DashboardPanelProvider.viewType, dashboardPanel)
   );
+  async function getBugsWithFallback() {
+    const stored = await storage.getAll();
+    return stored.length > 0 ? stored : getSeedBugRecords();
+  }
+  setTimeout(async () => {
+    const bugs = await getBugsWithFallback();
+    dashboardPanel.postMessage({ type: "showDashboard", data: { bugs } });
+  }, 500);
   let lastError;
   async function handlePhase1(error) {
     console.log(`${LOG8} Phase 1: error detected \u2014 ${error.message}`);
@@ -72734,7 +72908,7 @@ async function activate(context) {
         timestamp: Date.now()
       };
       await storage.save(record);
-      const allBugs = await storage.getAll();
+      const allBugs = await getBugsWithFallback();
       dashboardPanel.postMessage({
         type: "showDashboard",
         data: { bugs: allBugs }
@@ -72788,7 +72962,7 @@ async function activate(context) {
     }),
     vscode6.commands.registerCommand("flowfixer.showDashboard", async () => {
       vscode6.commands.executeCommand("flowfixer.dashboardPanel.focus");
-      const bugs = await storage.getAll();
+      const bugs = await getBugsWithFallback();
       dashboardPanel.postMessage({
         type: "showDashboard",
         data: { bugs }
@@ -72818,7 +72992,13 @@ async function activate(context) {
       });
       if (uri) {
         await context.secrets.store("flowfixer.mongoUri", uri);
-        vscode6.window.showInformationMessage("FlowFixer: MongoDB URI saved. Restart extension to connect.");
+        storage.setMongoUri(uri);
+        const connected = await storage.testMongoConnection();
+        if (connected) {
+          vscode6.window.showInformationMessage("FlowFixer: MongoDB URI saved and connected.");
+        } else {
+          vscode6.window.showWarningMessage("FlowFixer: URI saved, but connection failed. Using local fallback storage.");
+        }
       }
     }),
     // --- Manual trigger: analyze the current file's errors or report a logic bug ---
