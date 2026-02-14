@@ -196,7 +196,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       });
       if (uri) {
         await context.secrets.store("flowfixer.mongoUri", uri);
-        vscode.window.showInformationMessage("FlowFixer: MongoDB URI saved. Restart extension to connect.");
+        storage.setMongoUri(uri);
+        const connected = await storage.testMongoConnection();
+        if (connected) {
+          vscode.window.showInformationMessage("FlowFixer: MongoDB URI saved and connected.");
+        } else {
+          vscode.window.showWarningMessage("FlowFixer: URI saved, but connection failed. Using local fallback storage.");
+        }
       }
     }),
 
