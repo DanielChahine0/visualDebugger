@@ -211,10 +211,11 @@
             updatePanel(MOCK_DIFF_DATA);
         }
 
-        // ── ElevenLabs TTS — Natural Voice Integration ──
+        // ── ElevenLabs TTS — Fine-Tuned Natural Voice ──
+        // Premium voices: Sarah (soft, natural female), Chris (casual, conversational male)
         const VOICES = {
-            female: { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel' },
-            male: { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh' }
+            female: { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah' },
+            male: { id: 'iP95p4xoKVk53GoZ742B', name: 'Chris' }
         };
         let selectedVoice = 'female';
 
@@ -232,6 +233,26 @@
             voiceFemaleBtn.classList.remove('active');
         });
 
+        // Strip HTML tags and clean text for natural TTS reading
+        function cleanTextForTTS(html) {
+            if (!html) return '';
+            return html
+                .replace(/<code>/g, '')
+                .replace(/<\/code>/g, '')
+                .replace(/<strong>/g, '')
+                .replace(/<\/strong>/g, '')
+                .replace(/<em>/g, '')
+                .replace(/<\/em>/g, '')
+                .replace(/<[^>]*>/g, '')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
         const ttsBtn = document.getElementById('tts-btn');
         let ttsAudio = null;
         let isSpeaking = false;
@@ -245,7 +266,9 @@
             }
             
             const data = currentDiffData || MOCK_DIFF_DATA;
-            const textToRead = data.whatChanged + '. ' + data.whyItFixes + '. Key takeaway: ' + data.keyTakeaway;
+            const textToRead = cleanTextForTTS(
+                data.whatChanged + '. ' + data.whyItFixes + '. Key takeaway: ' + data.keyTakeaway
+            );
             
             const apiKey = (typeof ELEVENLABS_API_KEY !== 'undefined' && ELEVENLABS_API_KEY !== 'your_api_key_here')
                 ? ELEVENLABS_API_KEY : null;
@@ -259,16 +282,19 @@
                         headers: { 'Content-Type': 'application/json', 'xi-api-key': apiKey },
                         body: JSON.stringify({
                             text: textToRead,
-                            model_id: 'eleven_multilingual_v2',
+                            model_id: 'eleven_turbo_v2_5',
                             voice_settings: {
-                                stability: 0.65,
-                                similarity_boost: 0.80,
-                                style: 0.35,
+                                stability: 0.50,
+                                similarity_boost: 0.65,
+                                style: 0.10,
                                 use_speaker_boost: true
                             }
                         })
                     });
-                    if (!res.ok) throw new Error('API error ' + res.status);
+                    if (!res.ok) {
+                        const errorBody = await res.text().catch(() => '');
+                        throw new Error(`API ${res.status}: ${errorBody.slice(0, 100)}`);
+                    }
                     const blob = await res.blob();
                     const url = URL.createObjectURL(blob);
                     ttsAudio = new Audio(url);
@@ -282,19 +308,35 @@
                         ttsBtn.classList.remove('btn--tts-playing');
                         URL.revokeObjectURL(url);
                     };
+                    ttsAudio.onerror = () => {
+                        isSpeaking = false;
+                        ttsBtn.textContent = '❌ Audio Error';
+                        ttsBtn.classList.remove('btn--tts-playing');
+                        setTimeout(() => { ttsBtn.textContent = '🔊 Read Aloud'; }, 3000);
+                    };
                     ttsAudio.play();
                     return;
-                } catch (e) { console.warn('ElevenLabs failed, falling back:', e); }
+                } catch (e) {
+                    console.warn('ElevenLabs TTS error:', e);
+                    ttsBtn.textContent = '❌ ' + (e.message || 'TTS Failed');
+                    ttsBtn.classList.remove('btn--tts-loading');
+                    setTimeout(() => { ttsBtn.textContent = '🔊 Read Aloud'; }, 3000);
+                }
             }
             ttsBtn.classList.remove('btn--tts-loading');
             if ('speechSynthesis' in window) {
-                const u = new SpeechSynthesisUtterance(textToRead); u.rate = 0.95;
+                const u = new SpeechSynthesisUtterance(textToRead);
+                u.rate = 0.95;
+                u.pitch = 1.0;
                 isSpeaking = true;
                 ttsBtn.textContent = '⏹️ Stop';
                 ttsBtn.classList.add('btn--tts-playing');
                 u.onend = () => { isSpeaking = false; ttsBtn.textContent = '🔊 Read Aloud'; ttsBtn.classList.remove('btn--tts-playing'); };
                 speechSynthesis.speak(u);
-            } else { ttsBtn.textContent = '🔊 Read Aloud'; alert('TTS not available.'); }
+            } else {
+                ttsBtn.textContent = '❌ TTS Unavailable';
+                setTimeout(() => { ttsBtn.textContent = '🔊 Read Aloud'; }, 3000);
+            }
         });
     </script>
 </body>

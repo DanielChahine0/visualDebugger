@@ -7,7 +7,7 @@ import { ErrorPanelProvider } from "./panels/ErrorPanel";
 import { DiffPanelProvider } from "./panels/DiffPanel";
 import { DashboardPanelProvider } from "./panels/DashboardPanel";
 import { CapturedError, BugRecord, WebviewToExtMessage } from "./types";
-import { fetchTtsAudio } from "./ttsClient";
+
 import { getSeedBugRecords } from "./seedData";
 import { loadEnv } from "./envLoader";
 
@@ -145,29 +145,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     dashboardPanel.postMessage({ type: "showDashboard", data: { bugs } });
   }, 500);
 
-  // --- TTS message handler (shared by ErrorPanel & DiffPanel) ---
-  function handleTtsRequest(msg: WebviewToExtMessage, panel: typeof errorPanel | typeof diffPanel): void {
-    if (msg.type !== "requestTts") return;
-
-    (async () => {
-      const apiKey = await mergedSecrets.get("flowfixer.elevenLabsKey");
-      if (!apiKey) {
-        panel.postMessage({ type: "ttsError", data: { message: "No ElevenLabs API key set. Using browser speech." } });
-        return;
-      }
-      try {
-        const audio = await fetchTtsAudio(msg.text, apiKey);
-        panel.postMessage({ type: "playAudio", data: { audio } });
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        console.error(`${LOG} TTS failed:`, errMsg);
-        panel.postMessage({ type: "ttsError", data: { message: errMsg } });
-      }
-    })();
-  }
-
-  errorPanel.onMessage((msg) => handleTtsRequest(msg, errorPanel));
-  diffPanel.onMessage((msg) => handleTtsRequest(msg, diffPanel));
+  // TTS runs directly in the webview (calls ElevenLabs API from browser context)
+  // No extension-host proxy needed
 
   // --- Track last error for Phase 2 correlation ---
   let lastError: CapturedError | undefined;

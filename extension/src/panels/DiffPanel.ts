@@ -63,7 +63,7 @@ export class DiffPanelProvider implements vscode.WebviewViewProvider {
 
     // Inject CSP
     // Note: Allow cdn.jsdelivr.net for diff2html CSS and JS
-    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'nonce-${nonce}' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src https://api.elevenlabs.io blob:;">`;
+    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'nonce-${nonce}' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src https://api.elevenlabs.io blob:; media-src blob:;">`;
     html = html.replace('<head>', `<head>${csp}`);
 
     return html;
