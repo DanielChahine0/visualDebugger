@@ -71,7 +71,7 @@ AI coding tools made students faster but not smarter. Every accepted AI fix is a
 | **Bundler** | esbuild | Industry standard for VS Code extensions, 100x faster than webpack |
 | **Live Preview** | VS Code Webview + embedded iframe (DigitalOcean or localhost) | Shows before/after of web app in real-time |
 | **Diff Visualization** | `diff` (compute) + `diff2html` (render) | Syntax-highlighted side-by-side diffs out of the box |
-| **LLM Pipeline** | Gemini API (primary), Claude API (fallback) | Bug classification, explanations, quiz gen. Targets MLH Gemini prize |
+| **LLM Pipeline** | Gemini API | Bug classification, explanations, quiz gen. Targets MLH Gemini prize |
 | **TTS** | ElevenLabs API | "Read aloud" for explanations. Targets MLH ElevenLabs prize |
 | **Bug Dashboard** | Chart.js v4 in VS Code webview panel | Canvas-based, no framework dependency, small bundle |
 | **Webview UI** | `@vscode-elements/elements` (Lit-based) | Replaced deprecated webview-ui-toolkit. Native VS Code look-and-feel |

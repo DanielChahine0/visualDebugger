@@ -172,7 +172,7 @@ SO THAT I know which type of bugs I struggle with most.
 | Error detection | VS Code Diagnostics API + Terminal output parsing | Diagnostics API catches linter/compiler errors; terminal parsing catches runtime crashes |
 | Bundler | **esbuild** | Industry standard for VS Code extensions. 100x faster than webpack, builds extension host + webview in parallel |
 | Diff computation | **`diff`** npm library + **`diff2html`** for rendering | `diff` computes diffs, `diff2html` renders syntax-highlighted side-by-side/inline diffs out of the box |
-| LLM provider | **Gemini API** (primary), Claude API (fallback) | Targets MLH "Best Use of Gemini API" prize. Gemini handles structured JSON output well |
+| LLM provider | **Gemini API** | Targets MLH "Best Use of Gemini API" prize. Gemini handles structured JSON output well |
 | Dashboard rendering | **Chart.js v4** in webview | Canvas-based, no framework dependency, small bundle, proven in VS Code webviews |
 | Webview framework | **`@vscode-elements/elements`** (Lit-based) | Replaced deprecated `@vscode/webview-ui-toolkit`. ~5kb, native VS Code look-and-feel, used by GitLens |
 | State storage | **MongoDB Atlas** (primary) + VS Code `globalState` (offline fallback) | Targets MLH "Best Use of MongoDB Atlas" prize. Enables cross-device persistence and richer querying |
@@ -264,13 +264,13 @@ SO THAT I know which type of bugs I struggle with most.
 | 16+ | Visual bug fixes, demo polish | — | — |
 | **Total** | | | **~16h active** |
 
-### Engineer 3: "LLM + Demo" — owns Gemini/Claude integration, prompts, demo app, presentation
+### Engineer 3: "LLM + Demo" — owns Gemini integration, prompts, demo app, presentation
 
 **Owns:** `llmClient.ts`, `types.ts`, `demo-app/`, `docs/`
 
 | Hour | Task | Priority | Files |
 |------|------|----------|-------|
-| 0–2 | T17: Set up Gemini SDK + Claude fallback + request/response types | P0 | `llmClient.ts`, `types.ts` |
+| 0–2 | T17: Set up Gemini SDK + request/response types | P0 | `llmClient.ts`, `types.ts` |
 | 2–4.5 | T18: Write and test Phase 1 prompt — error → explanation JSON (few-shot) | P0 | `llmClient.ts` |
 | 4.5–6.5 | T19: Write and test Phase 2 prompt — diff → explanation JSON (few-shot) | P0 | `llmClient.ts` |
 | 6.5–8.5 | T20: Build demo React app (simple UI — counter, data loader, form) | P0 | `demo-app/src/App.tsx`, `demo-app/src/styles.css` |
@@ -305,7 +305,7 @@ Hour 0─2: SETUP (all 3 engineers)
 │
 │  Eng 1: T1 (scaffold extension + esbuild)
 │  Eng 2: T10a (shared styles + @vscode-elements)
-│  Eng 3: T17 (Gemini SDK + types)
+│  Eng 3: T17 (Gemini SDK setup + types)
 │
 Hour 2─6: PARALLEL TRACKS
 │
@@ -396,7 +396,7 @@ Hour 21─24: REHEARSE + SUBMIT                    │        │
 | R4 | Diff detection misses AI changes or fires on manual saves | Medium | Medium | Track "error active" state — only show diff panel if an error was recently explained. Use `onWillSave` + `onDidSave` pair. | Eng 1 |
 | R5 | Demo breaks on stage | Medium | Critical | Pre-plant bugs tested 10+ times. Pre-record backup video. Script every click. | Eng 3 |
 | R6 | Run out of time on P1 features | Medium | Low | P0 features alone make a complete demo. Dashboard, quiz, and TTS are enhancement, not core. | All |
-| R7 | LLM API rate limits or downtime | Low | Critical | Cache Gemini responses for demo bugs locally. If API is down, fall back to Claude API, then serve cached responses. | Eng 3 |
+| R7 | LLM API rate limits or downtime | Low | Critical | Cache Gemini responses for demo bugs locally. If API is down, serve cached responses. | Eng 3 |
 | R8 | Team burnout / coordination breakdown | Medium | Medium | Mandatory break at hour 12 (30 min). Sync standups at hours 6, 10, 14, 18. Clear ownership per task. | All |
 | R9 | MongoDB Atlas connection issues during demo | Low | Medium | Fall back to VS Code globalState for offline storage. Seed data works either way. | Eng 1 |
 | R10 | ElevenLabs TTS adds latency to demo | Low | Low | TTS is P1 and optional. Pre-cache audio for demo bugs. Skip button always available. | Eng 2 |
@@ -445,7 +445,7 @@ flowfixer/
 │   │   ├── extension.ts          # Entry point, activation, command registration
 │   │   ├── errorListener.ts      # Error interception (Diagnostics API + terminal parsing)
 │   │   ├── diffEngine.ts         # File watching, before/after capture, diff computation
-│   │   ├── llmClient.ts          # Gemini API calls, JSON parsing, caching (Claude fallback)
+│   │   ├── llmClient.ts          # Gemini API calls, JSON parsing, caching
 │   │   ├── ttsClient.ts          # ElevenLabs TTS API integration
 │   │   ├── storage.ts            # MongoDB Atlas client + globalState fallback
 │   │   ├── panels/
@@ -513,8 +513,7 @@ flowfixer/
 
 | Service | What For | Setup Time | Who |
 |---------|---------|-----------|-----|
-| **Google (Gemini API)** | Primary LLM for error explanation + diff explanation | 5 min | Eng 3 |
-| **Anthropic (Claude API)** — fallback | Backup LLM | 5 min | Eng 3 |
+| **Google (Gemini API)** | LLM for error explanation + diff explanation | 5 min | Eng 3 |
 | **MongoDB Atlas** | Bug history database (free tier) | 10 min | Eng 1 |
 | **ElevenLabs** | TTS for explanation read-aloud | 5 min | Eng 2 |
 | **DigitalOcean** | Demo app hosting ($200 free credits) | 10 min | Eng 1 |

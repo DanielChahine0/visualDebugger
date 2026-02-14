@@ -1,0 +1,14 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+
+# Build artifacts
+out/
+dist/
+*.vsix
+*.tsbuildinfo
+*.d.ts
+!src/**/*.d.ts
+
+# Environment
+.env
