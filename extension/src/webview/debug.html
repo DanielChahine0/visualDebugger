@@ -582,9 +582,10 @@
                 $('error-file-label').textContent = label;
                 $('error-preview').textContent = data.firstError.message;
 
-                // Keep current context when user is already reading an explanation.
-                // They can return manually with the Back button.
-                if (activeView !== 'error' && activeView !== 'diff') {
+                // Keep current context when user is reading an error explanation.
+                // But if we're on the diff view ("No more errors") and new errors
+                // appear, switch back to actions so the user sees them.
+                if (activeView !== 'error') {
                     showPanelSection('actions');
                 }
                 announce(label);
