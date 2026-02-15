@@ -31,8 +31,8 @@ describeIntegration("Gemini Integration (Real API)", () => {
   it("verifies connection with a simple ping", async () => {
     try {
       const response = await testConnection();
-      expect(response).toBeTruthy();
       expect(typeof response).toBe("string");
+      expect((response as string).length).toBeGreaterThan(0);
       console.log("[IntegrationTest] Connection Test Response:", response);
     } catch (e) {
       console.error("[IntegrationTest] Connection Test Failed:", e);
@@ -98,8 +98,10 @@ describeIntegration("Gemini Integration (Real API)", () => {
 +  for (let i = 0; i < items.length; i++) {`,
     });
 
-    expect(result.quickSummary).toBeTruthy();
-    expect(result.whyItWorks).toBeTruthy();
+    expect(typeof result.quickSummary).toBe("string");
+    expect(result.quickSummary.length).toBeGreaterThan(0);
+    expect(typeof result.whyItWorks).toBe("string");
+    expect(result.whyItWorks.length).toBeGreaterThan(0);
     expect(result.whatToDoNext).toHaveLength(3);
     console.log("[IntegrationTest] Phase 2 Response:", JSON.stringify(result, null, 2));
   }, 30000);
@@ -119,7 +121,8 @@ describeIntegration("Gemini Integration (Real API)", () => {
       throw new Error("Should have thrown but succeeded");
     } catch (e: any) {
       console.log("[IntegrationTest] Correctly caught error with invalid key:", e.message);
-      expect(e).toBeTruthy();
+      expect(e).toBeInstanceOf(Error);
+      expect(typeof e.message).toBe("string");
     }
   });
 });

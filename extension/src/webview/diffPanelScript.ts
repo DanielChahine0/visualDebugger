@@ -180,119 +180,130 @@ function updatePanel(data: DiffData): void {
   announce("Fix explanation updated.");
 }
 
-// ── Message handler ──
+// ── Listener initialization guard ──
 
-window.addEventListener("message", (event) => {
-  const msg = event.data;
+let _diffPanelInitialized = false;
 
-  if (msg.type === "showDiff") {
-    stopAudio();
-    updatePanel(msg.data);
-  } else if (msg.type === "playAudio") {
-    stopAudio();
-    // Convert base64 to blob URL (CSP blocks data: URIs for media)
-    const raw = atob(msg.data.base64Audio);
-    const bytes = new Uint8Array(raw.length);
-    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-    const blob = new Blob([bytes], { type: msg.data.mimeType });
-    const blobUrl = URL.createObjectURL(blob);
-    const audio = new Audio(blobUrl);
-    currentAudio = audio;
-    isSpeaking = true;
-    updateTtsStatus("Playing...");
-    const btn = $("tts-btn");
-    if (btn) {
-      btn.textContent = "⏹️ Stop";
-      btn.classList.add("ff-btn--playing");
-    }
-    audio.onended = () => {
-      URL.revokeObjectURL(blobUrl);
-      currentAudio = undefined;
-      isSpeaking = false;
+function initDiffPanelListeners(): void {
+  if (_diffPanelInitialized) return;
+  _diffPanelInitialized = true;
+
+  // ── Message handler ──
+
+  window.addEventListener("message", (event) => {
+    const msg = event.data;
+
+    if (msg.type === "showDiff") {
+      stopAudio();
+      updatePanel(msg.data);
+    } else if (msg.type === "playAudio") {
+      stopAudio();
+      // Convert base64 to blob URL (CSP blocks data: URIs for media)
+      const raw = atob(msg.data.base64Audio);
+      const bytes = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+      const blob = new Blob([bytes], { type: msg.data.mimeType });
+      const blobUrl = URL.createObjectURL(blob);
+      const audio = new Audio(blobUrl);
+      currentAudio = audio;
+      isSpeaking = true;
+      updateTtsStatus("Playing...");
+      const btn = $("tts-btn");
       if (btn) {
-        btn.textContent = "🔊 Read Aloud";
-        btn.classList.remove("ff-btn--playing");
+        btn.textContent = "⏹️ Stop";
+        btn.classList.add("ff-btn--playing");
       }
+      audio.onended = () => {
+        URL.revokeObjectURL(blobUrl);
+        currentAudio = undefined;
+        isSpeaking = false;
+        if (btn) {
+          btn.textContent = "🔊 Read Aloud";
+          btn.classList.remove("ff-btn--playing");
+        }
+        updateTtsStatus("");
+        announce("Audio finished.");
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(blobUrl);
+        currentAudio = undefined;
+        isSpeaking = false;
+        if (btn) {
+          btn.textContent = "🔊 Read Aloud";
+          btn.classList.remove("ff-btn--playing");
+        }
+        updateTtsStatus("Playback failed");
+        announce("Audio playback failed.");
+      };
+      void audio.play().catch(() => {
+        URL.revokeObjectURL(blobUrl);
+        currentAudio = undefined;
+        isSpeaking = false;
+        if (btn) btn.textContent = "🔊 Read Aloud";
+        updateTtsStatus("Could not play");
+        announce("Could not play audio.");
+      });
+    } else if (msg.type === "ttsError") {
+      announce(msg.data.message);
+      updateTtsStatus("Using browser voice...");
+      speakWithWebSpeech(getReadableText());
+    } else if (msg.type === "clear") {
+      stopAudio();
       updateTtsStatus("");
-      announce("Audio finished.");
-    };
-    audio.onerror = () => {
-      URL.revokeObjectURL(blobUrl);
-      currentAudio = undefined;
-      isSpeaking = false;
-      if (btn) {
-        btn.textContent = "🔊 Read Aloud";
-        btn.classList.remove("ff-btn--playing");
-      }
-      updateTtsStatus("Playback failed");
-      announce("Audio playback failed.");
-    };
-    void audio.play().catch(() => {
-      URL.revokeObjectURL(blobUrl);
-      currentAudio = undefined;
-      isSpeaking = false;
-      if (btn) btn.textContent = "🔊 Read Aloud";
-      updateTtsStatus("Could not play");
-      announce("Could not play audio.");
-    });
-  } else if (msg.type === "ttsError") {
-    announce(msg.data.message);
-    updateTtsStatus("Using browser voice...");
-    speakWithWebSpeech(getReadableText());
-  } else if (msg.type === "clear") {
-    stopAudio();
-    updateTtsStatus("");
-    $("empty-state")!.style.display = "";
-    $("diff-content")!.style.display = "none";
-  }
-});
-
-// ── Voice toggle ──
-
-$("voice-female")?.addEventListener("click", () => {
-  selectedVoice = "female";
-  $("voice-female")!.classList.add("active");
-  $("voice-female")!.setAttribute("aria-checked", "true");
-  $("voice-male")!.classList.remove("active");
-  $("voice-male")!.setAttribute("aria-checked", "false");
-});
-
-$("voice-male")?.addEventListener("click", () => {
-  selectedVoice = "male";
-  $("voice-male")!.classList.add("active");
-  $("voice-male")!.setAttribute("aria-checked", "true");
-  $("voice-female")!.classList.remove("active");
-  $("voice-female")!.setAttribute("aria-checked", "false");
-});
-
-// ── TTS button ──
-
-const ttsBtn = $("tts-btn");
-ttsBtn?.addEventListener("click", () => {
-  if (isSpeaking) {
-    stopAudio();
-    ttsBtn.textContent = "🔊 Read Aloud";
-    ttsBtn.classList.remove("ff-btn--playing");
-    return;
-  }
-  const text = getReadableText();
-  if (!text) {
-    announce("No explanation to read yet.");
-    return;
-  }
-  vscode.postMessage({ type: "requestTts", text, voice: selectedVoice });
-  ttsBtn.textContent = "⏳ Loading...";
-  updateTtsStatus("Loading audio...");
-});
-
-// ── Disclosure hint toggles ──
-
-document.querySelectorAll<HTMLDetailsElement>(".ff-disclosure").forEach((details) => {
-  const hint = details.querySelector(".ff-disclosure-hint");
-  if (!hint) return;
-  const showText = hint.textContent || "Show details";
-  const hideText = showText.replace("Show", "Hide");
-  details.addEventListener("toggle", () => {
-    hint.textContent = details.open ? hideText : showText;
+      $("empty-state")!.style.display = "";
+      $("diff-content")!.style.display = "none";
+    }
   });
-});
+
+  // ── Voice toggle ──
+
+  $("voice-female")?.addEventListener("click", () => {
+    selectedVoice = "female";
+    $("voice-female")!.classList.add("active");
+    $("voice-female")!.setAttribute("aria-checked", "true");
+    $("voice-male")!.classList.remove("active");
+    $("voice-male")!.setAttribute("aria-checked", "false");
+  });
+
+  $("voice-male")?.addEventListener("click", () => {
+    selectedVoice = "male";
+    $("voice-male")!.classList.add("active");
+    $("voice-male")!.setAttribute("aria-checked", "true");
+    $("voice-female")!.classList.remove("active");
+    $("voice-female")!.setAttribute("aria-checked", "false");
+  });
+
+  // ── TTS button ──
+
+  const ttsBtn = $("tts-btn");
+  ttsBtn?.addEventListener("click", () => {
+    if (isSpeaking) {
+      stopAudio();
+      ttsBtn.textContent = "🔊 Read Aloud";
+      ttsBtn.classList.remove("ff-btn--playing");
+      return;
+    }
+    const text = getReadableText();
+    if (!text) {
+      announce("No explanation to read yet.");
+      return;
+    }
+    vscode.postMessage({ type: "requestTts", text, voice: selectedVoice });
+    ttsBtn.textContent = "⏳ Loading...";
+    updateTtsStatus("Loading audio...");
+  });
+
+  // ── Disclosure hint toggles ──
+
+  document.querySelectorAll<HTMLDetailsElement>(".ff-disclosure").forEach((details) => {
+    const hint = details.querySelector(".ff-disclosure-hint");
+    if (!hint) return;
+    const showText = hint.textContent || "Show details";
+    const hideText = showText.replace("Show", "Hide");
+    details.addEventListener("toggle", () => {
+      hint.textContent = details.open ? hideText : showText;
+    });
+  });
+}
+
+initDiffPanelListeners();

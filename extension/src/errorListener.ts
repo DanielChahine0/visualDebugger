@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { CapturedError } from "./types";
+import { extractCodeContext } from "./utils";
 
 const LOG = "[FlowFixer:ErrorListener]";
 const SUPPORTED_LANGUAGES = new Set([
@@ -188,13 +189,7 @@ export class ErrorListener implements vscode.Disposable {
 
   /** Extract ±10 lines around the error line */
   private extractContext(text: string, line: number): string {
-    const lines = text.split("\n");
-    const start = Math.max(0, line - 11); // 10 lines before (1-indexed)
-    const end = Math.min(lines.length, line + 10);
-    return lines
-      .slice(start, end)
-      .map((l, i) => `${start + i + 1} | ${l}`)
-      .join("\n");
+    return extractCodeContext(text, line);
   }
 
   private errorKey(err: CapturedError): string {
@@ -203,9 +198,17 @@ export class ErrorListener implements vscode.Disposable {
 
   private isDuplicate(err: CapturedError): boolean {
     const key = this.errorKey(err);
+    const now = Date.now();
+
+    // Self-clean: remove stale entries older than 2 seconds
+    for (const [k, ts] of this.recentErrors) {
+      if (now - ts >= 2000) {
+        this.recentErrors.delete(k);
+      }
+    }
+
     const last = this.recentErrors.get(key);
-    // Deduplicate within 2 seconds
-    return !!last && Date.now() - last < 2000;
+    return !!last && now - last < 2000;
   }
 
   dispose(): void {

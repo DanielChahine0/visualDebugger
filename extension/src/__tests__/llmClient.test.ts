@@ -512,11 +512,11 @@ describe("llmClient", () => {
       });
 
       expect(result).toEqual(MOCK_PHASE2);
-      expect(result.quickSummary).toBeTruthy();
-      expect(result.whyItWorks).toBeTruthy();
-      expect(result.keyTakeaway).toBeTruthy();
+      expect(result.quickSummary).toBe("useState now starts with an empty array. A safety check was added before .map().");
+      expect(result.whyItWorks).toBe("Before, data had no starting value. That made it undefined. You can't call .map() on undefined. Now data starts as [], so .map() always has a list.");
+      expect(result.keyTakeaway).toBe("Always give useState a starting value that matches how you use it.");
       expect(result.whatToDoNext).toHaveLength(3);
-      expect(result.checkQuestion).toBeTruthy();
+      expect(result.checkQuestion).toBe("What happens if you call .map() on something that is undefined?");
     });
 
     it("passes the correct prompt with interpolated values", async () => {
@@ -587,12 +587,12 @@ describe("llmClient", () => {
       const result = await analyzeDiff(SYNTAX_FIX_REQUEST);
 
       expect(result).toEqual(SYNTAX_FIX_RESPONSE);
-      expect(result.quickSummary).toBeTruthy();
-      expect(result.whyItWorks).toBeTruthy();
-      expect(result.keyTakeaway).toBeTruthy();
+      expect(result.quickSummary).toBe("A missing closing parenthesis was added after the JSX block.");
+      expect(result.whyItWorks).toBe("The return( had no matching ). The parser couldn't find the end. Adding ) closes the return statement.");
+      expect(result.keyTakeaway).toBe("Every opening parenthesis needs a matching closing one.");
       expect(result.quickSummary).toMatch(/\)|parenthesis|closing/i);
       expect(result.whatToDoNext).toHaveLength(3);
-      expect(result.checkQuestion).toBeTruthy();
+      expect(result.checkQuestion).toBe("What was the parser looking for that it couldn't find?");
     });
 
     it("logic fix returns correct Phase2Response", async () => {
@@ -606,12 +606,12 @@ describe("llmClient", () => {
       const result = await analyzeDiff(LOGIC_FIX_REQUEST);
 
       expect(result).toEqual(LOGIC_FIX_RESPONSE);
-      expect(result.quickSummary).toBeTruthy();
-      expect(result.whyItWorks).toBeTruthy();
-      expect(result.keyTakeaway).toBeTruthy();
+      expect(result.quickSummary).toBe("The loop condition changed from <= to < for the items array.");
+      expect(result.whyItWorks).toBe("A 3-item array has spots 0, 1, 2. Using <= tried spot 3 which doesn't exist. Using < stops at the last real spot.");
+      expect(result.keyTakeaway).toBe("Use < array.length, not <= array.length, for loops.");
       expect(result.quickSummary).toMatch(/<=|less-than/i);
       expect(result.whatToDoNext).toHaveLength(3);
-      expect(result.checkQuestion).toBeTruthy();
+      expect(result.checkQuestion).toBe("Why does items[3] give undefined in a 3-item array?");
     });
 
     it("runtime fix returns correct Phase2Response", async () => {
@@ -625,12 +625,12 @@ describe("llmClient", () => {
       const result = await analyzeDiff(RUNTIME_FIX_REQUEST);
 
       expect(result).toEqual(RUNTIME_FIX_RESPONSE);
-      expect(result.quickSummary).toBeTruthy();
-      expect(result.whyItWorks).toBeTruthy();
-      expect(result.keyTakeaway).toBeTruthy();
+      expect(result.quickSummary).toBe("useState now starts with an empty array. Optional chaining was added before .map().");
+      expect(result.whyItWorks).toBe("Without a default value, data was undefined on first render. Calling .map() on undefined crashes. An empty array default and ?. prevent that.");
+      expect(result.keyTakeaway).toBe("Initialize React state to match how you use it \u2014 call .map() only on arrays, not undefined.");
       expect(result.quickSummary).toMatch(/useState|optional chaining|\?\./i);
       expect(result.whatToDoNext).toHaveLength(3);
-      expect(result.checkQuestion).toBeTruthy();
+      expect(result.checkQuestion).toBe("What happens if you call .map() on something that is undefined?");
     });
 
     it("multi-hunk diff prompt passes full diff content", async () => {
@@ -694,11 +694,11 @@ describe("llmClient", () => {
       });
 
       expect(result).toEqual(minimalResponse);
-      expect(result.quickSummary).toBeTruthy();
-      expect(result.whyItWorks).toBeTruthy();
-      expect(result.keyTakeaway).toBeTruthy();
+      expect(result.quickSummary).toBe("Changed x to y.");
+      expect(result.whyItWorks).toBe("The old value was incorrect.");
+      expect(result.keyTakeaway).toBe("Use the right variable name.");
       expect(result.whatToDoNext).toHaveLength(3);
-      expect(result.checkQuestion).toBeTruthy();
+      expect(result.checkQuestion).toBe("Why was x the wrong variable here?");
     });
   });
 

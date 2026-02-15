@@ -28,7 +28,6 @@
     "onCommand:visualdebugger.showDashboard",
     "onCommand:visualdebugger.setGeminiKey",
     "onCommand:visualdebugger.setElevenLabsKey",
-    "onCommand:visualdebugger.setMongoUri",
     "onCommand:visualdebugger.setElevenLabsKey",
     "onCommand:visualdebugger.analyzeCurrentFile",
     "onCommand:visualdebugger.explainCodeLensError",
@@ -64,10 +63,6 @@
       {
         "command": "visualdebugger.setElevenLabsKey",
         "title": "Visual Debugger: Set ElevenLabs API Key"
-      },
-      {
-        "command": "visualdebugger.setMongoUri",
-        "title": "Visual Debugger: Set MongoDB Atlas URI"
       },
       {
         "command": "visualdebugger.setElevenLabsKey",
@@ -123,6 +118,7 @@
     "@types/node": "^20.0.0",
     "@types/prismjs": "^1.26.6",
     "@types/vscode": "^1.85.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "@vscode/vsce": "^3.7.1",
     "esbuild": "^0.27.3",
     "typescript": "^5.7.0",
@@ -131,10 +127,8 @@
   "dependencies": {
     "@google/genai": "^1.0.0",
     "chart.js": "^4.5.1",
-    "diff2html": "^3.4.52",
     "diff": "^5.2.0",
-    "mongodb": "^6.3.0",
+    "diff2html": "^3.4.52",
     "prismjs": "^1.30.0"
   }
 }
-

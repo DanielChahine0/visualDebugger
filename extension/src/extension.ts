@@ -1,44 +1,29 @@
 import * as vscode from "vscode";
 import { ErrorListener } from "./errorListener";
 import { DiffEngine } from "./diffEngine";
-import { initialize as initLLM, analyzeError, analyzeDiff, isInitialized, testConnection, FlowFixerError } from "./llmClient";
+import { initialize as initLLM, isInitialized, testConnection } from "./llmClient";
 import { FlowFixerStorage } from "./storage";
 import { DebugPanelProvider } from "./panels/DebugPanel";
 import { DashboardPanelProvider } from "./panels/DashboardPanel";
-import { CapturedDiff, CapturedError, BugRecord, DiffExplanation, WebviewToExtMessage } from "./types";
-
-import { getSeedBugRecords } from "./seedData";
+import { CapturedError } from "./types";
 import { loadEnv } from "./envLoader";
-import { fetchTtsAudio } from "./ttsClient";
 import { FlowFixerCodeLensProvider, SUPPORTED_LANGUAGES } from "./codeLensProvider";
+import { extractCodeContext } from "./utils";
+import { createStatusManager } from "./statusManager";
+import { createPhase1Handler } from "./phase1Handler";
+import { createPhase2Handler } from "./phase2Handler";
+import { createMessageHandler } from "./messageHandler";
 
 const LOG = "[FlowFixer]";
-const TTS_MIME_TYPE = "audio/mpeg";
-const TTS_CACHE_TTL_MS = 10 * 60 * 1000;
-const TTS_CACHE_MAX_ENTRIES = 50;
-type StatusState =
-  | "ready"
-  | "needsKey"
-  | "analyzingError"
-  | "errorExplained"
-  | "analyzingDiff"
-  | "diffReviewed"
-  | "analysisFailed";
-
-interface MessageTarget {
-  postMessage(message: unknown): void;
-}
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   console.log(`${LOG} activating...`);
-  const ttsCache = new Map<string, { base64Audio: string; createdAt: number }>();
 
   // --- .env support (checked before context.secrets) ---
   const envMap = loadEnv();
   const ENV_KEY_MAP: Record<string, string> = {
     "visualdebugger.geminiKey": "GEMINI_API_KEY",
     "visualdebugger.elevenLabsKey": "ELEVENLABS_API_KEY",
-    "visualdebugger.mongoUri": "MONGODB_URI",
   };
   const mergedSecrets = {
     async get(key: string): Promise<string | undefined> {
@@ -62,8 +47,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   // --- Storage ---
-  const mongoUri = await mergedSecrets.get("visualdebugger.mongoUri");
-  const storage = new FlowFixerStorage(context.globalState, mongoUri);
+  const storage = new FlowFixerStorage(context.globalState);
 
   const debugPanel = new DebugPanelProvider(context.extensionUri);
   const dashboardPanel = new DashboardPanelProvider(context.extensionUri);
@@ -121,228 +105,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Fire once on activation to pick up existing errors
   setTimeout(updateActionsPanel, 300);
 
-  async function getBugsWithFallback(): Promise<BugRecord[]> {
-    const stored = await storage.getAll();
-    return stored.length > 0 ? stored : getSeedBugRecords();
-  }
-
+  // --- Status bar ---
   const statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   statusItem.name = "Visual Debugger";
   statusItem.command = "visualdebugger.showDashboard";
   context.subscriptions.push(statusItem);
 
-  let resetStatusTimer: NodeJS.Timeout | undefined;
-  const clearResetTimer = () => {
-    if (resetStatusTimer) {
-      clearTimeout(resetStatusTimer);
-      resetStatusTimer = undefined;
-    }
-  };
+  const statusManager = createStatusManager(statusItem);
+  context.subscriptions.push({ dispose: () => statusManager.dispose() });
+  statusManager.updateStatus(isInitialized() ? "ready" : "needsKey");
 
-  const updateStatus = (state: StatusState): void => {
-    clearResetTimer();
+  // --- Phase 1 handler ---
+  const phase1 = createPhase1Handler({ debugPanel, dashboardPanel, diffEngine, storage, statusManager });
 
-    switch (state) {
-      case "ready":
-        statusItem.text = "$(bug) Visual Debugger Ready";
-        statusItem.tooltip = "Visual Debugger is active. Click to open Bug Dashboard.";
-        statusItem.command = "visualdebugger.showDashboard";
-        break;
-      case "needsKey":
-        statusItem.text = "$(key) Visual Debugger: Set Gemini Key";
-        statusItem.tooltip = "Gemini API key is required for analysis. Click to configure.";
-        statusItem.command = "visualdebugger.setGeminiKey";
-        break;
-      case "analyzingError":
-        statusItem.text = "$(loading~spin) Visual Debugger: Analyzing error...";
-        statusItem.tooltip = "Visual Debugger is analyzing the detected error.";
-        statusItem.command = "visualdebugger.showDebugPanel";
-        break;
-      case "errorExplained":
-        statusItem.text = "$(check) Visual Debugger: Error explained";
-        statusItem.tooltip = "Error explanation ready. Click to open the panel.";
-        statusItem.command = "visualdebugger.showDebugPanel";
-        resetStatusTimer = setTimeout(() => updateStatus(isInitialized() ? "ready" : "needsKey"), 5000);
-        break;
-      case "analyzingDiff":
-        statusItem.text = "$(loading~spin) Visual Debugger: Reviewing fix...";
-        statusItem.tooltip = "Visual Debugger is analyzing the code diff.";
-        statusItem.command = "visualdebugger.showDebugPanel";
-        break;
-      case "diffReviewed":
-        statusItem.text = "$(git-compare) Visual Debugger: Fix reviewed";
-        statusItem.tooltip = "Diff review ready. Click to open the panel.";
-        statusItem.command = "visualdebugger.showDebugPanel";
-        resetStatusTimer = setTimeout(() => updateStatus(isInitialized() ? "ready" : "needsKey"), 5000);
-        break;
-      case "analysisFailed":
-        statusItem.text = "$(error) Visual Debugger: Analysis failed";
-        statusItem.tooltip = "Analysis failed. Check API key and logs, then retry.";
-        statusItem.command = "visualdebugger.showDashboard";
-        resetStatusTimer = setTimeout(() => updateStatus(isInitialized() ? "ready" : "needsKey"), 5000);
-        break;
-    }
-
-    statusItem.show();
-  };
-
-  context.subscriptions.push({ dispose: clearResetTimer });
-  updateStatus(isInitialized() ? "ready" : "needsKey");
-
+  // Seed dashboard on activation
   setTimeout(async () => {
-    const bugs = await getBugsWithFallback();
+    const bugs = await phase1.getBugsWithFallback();
     dashboardPanel.postMessage({ type: "showDashboard", data: { bugs } });
   }, 500);
 
-  // TTS runs directly in the webview (calls ElevenLabs API from browser context)
-  // No extension-host proxy needed
+  // --- Phase 2 handler ---
+  const onDiffDetected = createPhase2Handler({ debugPanel, dashboardPanel, storage, statusManager, phase1Handler: phase1 });
+  diffEngine.onDiffDetected(onDiffDetected);
 
-  // --- Track last error for Phase 2 correlation ---
-  let lastError: CapturedError | undefined;
-  let lastBugId: string | undefined;
-  let holdDiffReview = false;
-  let pendingDiffReview = false;
-
-  async function handlePhase1(
-    error: CapturedError,
-    opts?: { trigger?: "auto" | "manual" }
-  ): Promise<void> {
-    const trigger = opts?.trigger ?? "auto";
-    if ((holdDiffReview || pendingDiffReview) && trigger === "auto") {
-      console.log(`${LOG} skipping auto Phase 1 while diff review is active`);
-      return;
-    }
-
-    console.log(`${LOG} Phase 1: error detected - ${error.message}`);
-    lastError = error;
-    holdDiffReview = false;
-    // New error cycle starts here. Clear any stale Phase 2 review so users
-    // don't see old fix explanations before a new diff is detected.
-    debugPanel.postMessage({ type: "clear" });
-
-    diffEngine.startTracking(error.file);
-    updateStatus("analyzingError");
-
-    try {
-      if (!isInitialized()) {
-        throw new FlowFixerError("No API key set");
-      }
-
-      const explanation = await analyzeError({
-        language: error.language,
-        filename: error.file,
-        errorMessage: error.message,
-        codeContext: error.codeContext,
-      });
-
-      // Guard against race: an auto Phase 1 request may have started before
-      // diff review was pinned and completed after it.
-      if ((holdDiffReview || pendingDiffReview) && trigger === "auto") {
-        console.log(`${LOG} dropping stale auto Phase 1 result while diff review is active`);
-        return;
-      }
-
-      debugPanel.postMessage({
-        type: "showError",
-        data: { ...explanation, raw: error },
-      });
-
-      const record: BugRecord = {
-        id: `bug_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        category: explanation.category,
-        file: error.file,
-        errorMessage: error.message,
-        explanation,
-        timestamp: Date.now(),
-      };
-      await storage.save(record);
-      lastBugId = record.id;
-
-      const allBugs = await getBugsWithFallback();
-      dashboardPanel.postMessage({
-        type: "showDashboard",
-        data: { bugs: allBugs },
-      });
-
-      updateStatus("errorExplained");
-    } catch (err) {
-      console.error(`${LOG} Phase 1 failed:`, err);
-      updateStatus("analysisFailed");
-
-      if (err instanceof FlowFixerError) {
-        vscode.window.showWarningMessage(`Visual Debugger: ${err.message}`);
-      }
-    }
-  }
-
-  async function handleWebviewMessage(
-    source: "error" | "diff" | "dashboard",
-    target: MessageTarget,
-    message: WebviewToExtMessage
-  ): Promise<void> {
-    switch (message.type) {
-      case "ready":
-        console.log(`${LOG} ${source} panel ready`);
-        return;
-      case "diffReviewClosed":
-        holdDiffReview = false;
-        console.log(`${LOG} diff review unpinned by user`);
-        return;
-      case "quizAnswer":
-        console.log(`${LOG} quiz answered from ${source} panel: ${message.answer}`);
-        return;
-      case "requestTts": {
-        const text = message.text.trim();
-        if (!text) return;
-        const voice = message.voice ?? "female";
-        const cacheKey = `${voice}::${text}`;
-
-        const cached = ttsCache.get(cacheKey);
-        if (cached && Date.now() - cached.createdAt < TTS_CACHE_TTL_MS) {
-          target.postMessage({
-            type: "playAudio",
-            data: { base64Audio: cached.base64Audio, mimeType: TTS_MIME_TYPE },
-          });
-          return;
-        }
-        if (cached) {
-          ttsCache.delete(cacheKey);
-        }
-
-        const elevenLabsKey = await mergedSecrets.get("visualdebugger.elevenLabsKey");
-        if (!elevenLabsKey) {
-          target.postMessage({
-            type: "ttsError",
-            data: { message: "ElevenLabs key not set. Check .env file." },
-          });
-          return;
-        }
-
-        try {
-          const base64Audio = await fetchTtsAudio(text, elevenLabsKey, voice);
-          ttsCache.set(cacheKey, { base64Audio, createdAt: Date.now() });
-          if (ttsCache.size > TTS_CACHE_MAX_ENTRIES) {
-            const oldestKey = ttsCache.keys().next().value as string | undefined;
-            if (oldestKey) {
-              ttsCache.delete(oldestKey);
-            }
-          }
-
-          target.postMessage({
-            type: "playAudio",
-            data: { base64Audio, mimeType: TTS_MIME_TYPE },
-          });
-        } catch (err) {
-          console.error(`${LOG} TTS request failed:`, err);
-          target.postMessage({
-            type: "ttsError",
-            data: { message: "TTS is temporarily unavailable. Using browser voice fallback." },
-          });
-        }
-        return;
-      }
-    }
-  }
+  // --- Message handler ---
+  const handleWebviewMessage = createMessageHandler({ mergedSecrets });
 
   context.subscriptions.push(
     debugPanel.onMessage((msg) => {
@@ -356,13 +143,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         const first = errors[0];
         const line = first.range.start.line + 1;
-        const lines = doc.getText().split("\n");
-        const start = Math.max(0, line - 11);
-        const end = Math.min(lines.length, line + 10);
-        const codeContext = lines
-          .slice(start, end)
-          .map((l, i) => `${start + i + 1} | ${l}`)
-          .join("\n");
+        const codeContext = extractCodeContext(doc.getText(), line);
 
         const captured: CapturedError = {
           message: first.message,
@@ -375,12 +156,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           timestamp: Date.now(),
         };
 
-        void handlePhase1(captured, { trigger: "manual" });
+        void phase1.handlePhase1(captured, { trigger: "manual" });
+      } else if (msg.type === "diffReviewClosed") {
+        phase1.setHoldDiffReview(false);
+        void handleWebviewMessage("error", debugPanel, msg);
       } else {
         void handleWebviewMessage("error", debugPanel, msg);
       }
     }),
     dashboardPanel.onMessage((msg) => {
+      if (msg.type === "diffReviewClosed") {
+        phase1.setHoldDiffReview(false);
+      }
       void handleWebviewMessage("dashboard", dashboardPanel, msg);
     })
   );
@@ -391,79 +178,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // on every transient diagnostic change (line shifts, partial edits, etc.).
   errorListener.onErrorDetected((error) => {
     console.log(`${LOG} errorListener fired (ignored): ${error.message} at ${error.file}:${error.line}`);
-  });
-
-  diffEngine.onDiffDetected(async (diff) => {
-    console.log(`${LOG} Phase 2: diff detected in ${diff.file}`);
-
-    pendingDiffReview = true;
-    updateStatus("analyzingDiff");
-    const originalError = lastError?.message ?? "unknown error";
-
-    try {
-      if (!isInitialized()) {
-        throw new FlowFixerError("No API key set");
-      }
-
-      console.log(`${LOG} Phase 2: calling analyzeDiff for ${diff.file}...`);
-      const diffExplanation = await analyzeDiff({
-        language: diff.language,
-        filename: diff.file,
-        originalError,
-        diff: diff.unifiedDiff,
-      });
-
-      console.log(`${LOG} Phase 2: analyzeDiff succeeded, posting showDiff`);
-      debugPanel.postMessage({
-        type: "showDiff",
-        data: { ...diffExplanation, diff },
-      });
-      holdDiffReview = true;
-      pendingDiffReview = false;
-
-      const bugs = await storage.getAll();
-      const byLastId = lastBugId
-        ? bugs.find((bug) => bug.id === lastBugId)
-        : undefined;
-      const targetBug =
-        byLastId ??
-        [...bugs]
-          .reverse()
-          .find((bug) => bug.file === diff.file && bug.diffExplanation === undefined);
-
-      if (targetBug) {
-        const updated: BugRecord = {
-          ...targetBug,
-          diffExplanation,
-        };
-        await storage.update(updated);
-      }
-
-      const allBugs = await getBugsWithFallback();
-      dashboardPanel.postMessage({
-        type: "showDashboard",
-        data: { bugs: allBugs },
-      });
-
-      updateStatus("diffReviewed");
-    } catch (err) {
-      pendingDiffReview = false;
-      const errStr = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
-      console.error(`${LOG} Phase 2 failed: ${errStr}`);
-      const fallbackExplanation = buildFallbackDiffExplanation(diff, originalError);
-      debugPanel.postMessage({
-        type: "showDiff",
-        data: { ...fallbackExplanation, diff },
-      });
-      holdDiffReview = true;
-      updateStatus("diffReviewed");
-
-      if (err instanceof FlowFixerError) {
-        vscode.window.showWarningMessage(
-          `Visual Debugger: ${err.message}. Showing local fix summary instead.`
-        );
-      }
-    }
   });
 
   context.subscriptions.push(
@@ -478,7 +192,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.commands.registerCommand("visualdebugger.showDashboard", async () => {
       await vscode.commands.executeCommand("visualdebugger.dashboardPanel.focus");
-      const bugs = await getBugsWithFallback();
+      const bugs = await phase1.getBugsWithFallback();
       dashboardPanel.postMessage({
         type: "showDashboard",
         data: { bugs },
@@ -494,10 +208,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         await context.secrets.store("visualdebugger.geminiKey", key);
         try {
           await initLLM(mergedSecrets);
-          updateStatus("ready");
+          statusManager.updateStatus("ready");
           vscode.window.showInformationMessage("Visual Debugger: Gemini API key saved and connected.");
         } catch {
-          updateStatus("needsKey");
+          statusManager.updateStatus("needsKey");
           vscode.window.showWarningMessage("Visual Debugger: Key saved but initialization failed. Check the key.");
         }
       }
@@ -508,15 +222,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           // Attempt to init if not already (e.g. if key was just added to .env)
           await initLLM(mergedSecrets);
         }
-        
+
         vscode.window.showInformationMessage("Visual Debugger: Testing Gemini connection...");
         const response = await testConnection();
         vscode.window.showInformationMessage(`Visual Debugger: Connection Successful! Gemini replied: "${response}"`);
-        updateStatus("ready");
+        statusManager.updateStatus("ready");
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         vscode.window.showErrorMessage(`Visual Debugger: Connection Failed. ${msg}`);
-        updateStatus("needsKey");
+        statusManager.updateStatus("needsKey");
       }
     }),
     vscode.commands.registerCommand("visualdebugger.setElevenLabsKey", async () => {
@@ -528,38 +242,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (key) {
         await context.secrets.store("visualdebugger.elevenLabsKey", key);
         vscode.window.showInformationMessage("Visual Debugger: ElevenLabs API key saved. Read Aloud is ready.");
-      }
-    }),
-    vscode.commands.registerCommand("visualdebugger.setMongoUri", async () => {
-      const currentUri = await mergedSecrets.get("visualdebugger.mongoUri");
-      const uriInput = await vscode.window.showInputBox({
-        prompt: "Enter your MongoDB Atlas connection URI (leave empty to disable)",
-        password: true,
-        value: currentUri ?? "",
-        ignoreFocusOut: true,
-      });
-
-      if (uriInput === undefined) {
-        return;
-      }
-
-      const uri = uriInput.trim();
-
-      if (!uri) {
-        await context.secrets.delete("visualdebugger.mongoUri");
-        storage.setMongoUri(undefined);
-        vscode.window.showInformationMessage("Visual Debugger: MongoDB disabled. Using local fallback storage.");
-        return;
-      }
-
-      await context.secrets.store("visualdebugger.mongoUri", uri);
-      storage.setMongoUri(uri);
-      const connected = await storage.testMongoConnection();
-      if (connected) {
-        const synced = await storage.syncLocalToMongo();
-        vscode.window.showInformationMessage(`Visual Debugger: MongoDB URI saved and connected. Synced ${synced} local record(s).`);
-      } else {
-        vscode.window.showWarningMessage("Visual Debugger: URI saved, but connection failed. Using local fallback storage.");
       }
     }),
     vscode.commands.registerCommand("visualdebugger.analyzeCurrentFile", async () => {
@@ -578,13 +260,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (errors.length > 0) {
         const diag = errors[0];
         const line = diag.range.start.line + 1;
-        const lines = doc.getText().split("\n");
-        const start = Math.max(0, line - 11);
-        const end = Math.min(lines.length, line + 10);
-        const codeContext = lines
-          .slice(start, end)
-          .map((l, i) => `${start + i + 1} | ${l}`)
-          .join("\n");
+        const codeContext = extractCodeContext(doc.getText(), line);
 
         const captured: CapturedError = {
           message: diag.message,
@@ -597,7 +273,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           timestamp: Date.now(),
         };
 
-        await handlePhase1(captured, { trigger: "manual" });
+        await phase1.handlePhase1(captured, { trigger: "manual" });
       } else {
         const errorMsg = await vscode.window.showInputBox({
           prompt: "No compiler errors found. Describe the bug (e.g., 'renders an extra item', 'TypeError: Cannot read properties of undefined')",
@@ -608,13 +284,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         if (!errorMsg) return;
 
         const line = editor.selection.active.line + 1;
-        const lines = doc.getText().split("\n");
-        const start = Math.max(0, line - 11);
-        const end = Math.min(lines.length, line + 10);
-        const codeContext = lines
-          .slice(start, end)
-          .map((l, i) => `${start + i + 1} | ${l}`)
-          .join("\n");
+        const codeContext = extractCodeContext(doc.getText(), line);
 
         const captured: CapturedError = {
           message: errorMsg,
@@ -627,19 +297,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           timestamp: Date.now(),
         };
 
-        await handlePhase1(captured, { trigger: "manual" });
+        await phase1.handlePhase1(captured, { trigger: "manual" });
       }
     }),
     vscode.commands.registerCommand("visualdebugger.explainCodeLensError", async (file: string, line: number, message: string) => {
       const doc = vscode.workspace.textDocuments.find((d) => d.uri.fsPath === file);
       const text = doc?.getText() ?? "";
-      const lines = text.split("\n");
-      const start = Math.max(0, line - 11);
-      const end = Math.min(lines.length, line + 10);
-      const codeContext = lines
-        .slice(start, end)
-        .map((l, i) => `${start + i + 1} | ${l}`)
-        .join("\n");
+      const codeContext = extractCodeContext(text, line);
 
       const captured: CapturedError = {
         message,
@@ -652,7 +316,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         timestamp: Date.now(),
       };
 
-      await handlePhase1(captured, { trigger: "manual" });
+      await phase1.handlePhase1(captured, { trigger: "manual" });
     }),
     vscode.commands.registerCommand("visualdebugger.fixCodeLensError", async (file: string, line: number, message: string) => {
       const action = await vscode.window.showInformationMessage(
@@ -677,26 +341,4 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
 export function deactivate(): void {
   console.log(`${LOG} deactivated`);
-}
-
-function buildFallbackDiffExplanation(
-  diff: CapturedDiff,
-  originalError: string
-): DiffExplanation {
-  const normalizedErr = originalError.trim() || "the original issue";
-  return {
-    quickSummary:
-      "No more errors. The latest code edits were captured and reviewed locally.",
-    whyItWorks:
-      `The recent edits resolved ${normalizedErr}. The file now compiles/runs without the previous error.`,
-    whatToDoNext: [
-      "Scan the changed lines to confirm they match your intent.",
-      "Run the feature once to verify behavior is correct.",
-      "If needed, click Explain again for a deeper breakdown.",
-    ],
-    keyTakeaway:
-      "A fix is valid when the error clears and behavior still matches expectations.",
-    checkQuestion:
-      "Which exact edit removed the failing condition in your code?",
-  };
 }

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import * as fs from "fs";
 import { ExtToWebviewMessage, WebviewToExtMessage } from "../types";
+import { getWebviewHtml } from "./panelUtils";
 
 const LOG = "[FlowFixer:DashboardPanel]";
 
@@ -41,38 +41,18 @@ export class DashboardPanelProvider implements vscode.WebviewViewProvider {
   }
 
   private getHtml(webview: vscode.Webview): string {
-    const htmlPath = vscode.Uri.joinPath(this.extensionUri, "dist", "webview", "dashboard.html");
-    const stylesUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "dist", "webview", "styles.css"));
-    const configUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "dist", "webview", "config.js"));
-    const nonce = getNonce();
-
-    let html = "";
     try {
-        html = fs.readFileSync(htmlPath.fsPath, "utf8");
+      return getWebviewHtml(webview, this.extensionUri, "dashboard.html", {
+        'href="styles.css"': "styles.css",
+      }, {
+        extraScriptSrc: ["https://cdn.jsdelivr.net"],
+        extraConnectSrc: ["https://api.elevenlabs.io", "blob:"],
+        extraMediaSrc: ["blob:", "data:"],
+        extraFontSrc: ["https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+      });
     } catch (e) {
-        console.error(`${LOG} Failed to read dashboard.html`, e);
-        return `<div>Error loading resource: ${e}</div>`;
+      console.error(`${LOG} Failed to read dashboard.html`, e);
+      return `<div>Error loading resource: ${e}</div>`;
     }
-
-    // Replace resource paths
-    html = html.replace('href="styles.css"', `href="${stylesUri}"`);
-    
-    // Add nonce to all script tags
-    html = html.replace(/<script/g, `<script nonce="${nonce}"`);
-
-    // Inject CSP
-    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src https://api.elevenlabs.io blob:; media-src blob: data:; font-src https://fonts.googleapis.com https://fonts.gstatic.com; img-src data:;">`;
-    html = html.replace('<head>', `<head>${csp}`);
-
-    return html;
   }
-}
-
-function getNonce(): string {
-  let text = "";
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return text;
 }

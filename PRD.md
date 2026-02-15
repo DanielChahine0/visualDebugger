@@ -202,9 +202,9 @@ SO THAT I get the same information at my reading level.
                │
                ▼
     ┌─────────────────┐     ┌─────────────────┐
-    │   Gemini API    │     │  MongoDB Atlas   │
-    │   (Primary LLM) │     │  (Bug History)   │
-    │                 │     │                 │
+    │   Gemini API    │     │  VS Code        │
+    │   (Primary LLM) │     │  globalState    │
+    │                 │     │  (Bug History)  │
     │  Phase 1:       │     │  - category     │
     │  error → explain│     │  - timestamps   │
     │                 │     │  - explanations │
@@ -230,7 +230,7 @@ SO THAT I get the same information at my reading level.
 | LLM provider | **Gemini API** | Targets MLH "Best Use of Gemini API" prize. Gemini handles structured JSON output well |
 | Dashboard rendering | **Chart.js v4** in webview | Canvas-based, no framework dependency, small bundle, proven in VS Code webviews |
 | Webview framework | **`@vscode-elements/elements`** (Lit-based) | Replaced deprecated `@vscode/webview-ui-toolkit`. ~5kb, native VS Code look-and-feel, used by GitLens |
-| State storage | **MongoDB Atlas** (primary) + VS Code `globalState` (offline fallback) | Targets MLH "Best Use of MongoDB Atlas" prize. Enables cross-device persistence and richer querying |
+| State storage | VS Code `globalState` | Built-in, always available, no external dependencies |
 | Secrets | **`context.secrets`** API | Encrypted storage for API keys (Gemini, MongoDB, ElevenLabs) |
 | TTS | **ElevenLabs API** (P0) | "Read aloud" for bug explanations. Targets MLH "Best Use of ElevenLabs" prize. Core accessibility accommodation for dyslexia and visual impairment |
 | Demo app hosting | **DigitalOcean App Platform** | Targets MLH "Best Use of DigitalOcean" prize. Shows production-ready deployment |
@@ -460,7 +460,7 @@ Hour 21─24: REHEARSE + SUBMIT                    │        │
 | R6 | Run out of time on P1 features | Medium | Low | P0 features alone make a complete demo. Dashboard, quiz, and TTS are enhancement, not core. | All |
 | R7 | LLM API rate limits or downtime | Low | Critical | Cache Gemini responses for demo bugs locally. If API is down, serve cached responses. | Eng 3 |
 | R8 | Team burnout / coordination breakdown | Medium | Medium | Mandatory break at hour 12 (30 min). Sync standups at hours 6, 10, 14, 18. Clear ownership per task. | All |
-| R9 | MongoDB Atlas connection issues during demo | Low | Medium | Fall back to VS Code globalState for offline storage. Seed data works either way. | Eng 1 |
+| R9 | ~~MongoDB Atlas connection issues during demo~~ | ~~Low~~ | ~~Medium~~ | Removed — storage is now globalState-only. No external dependency. | — |
 | R10 | ElevenLabs TTS adds latency to demo | Low | Low | TTS is P0 but demo-safe. Pre-cache audio for demo bugs. Skip button always available. | Eng 2 |
 | R11 | Accessibility claims not backed by features | Medium | High | Implement ARIA labels, keyboard nav, and TTS before demo | All |
 | R12 | TTS latency during demo | Low | Medium | Pre-cache audio, browser SpeechSynthesis fallback | Eng 2 |
@@ -482,7 +482,7 @@ Hour 21─24: REHEARSE + SUBMIT                    │        │
 - [ ] Quiz component tests understanding after error explanation
 - [ ] ElevenLabs TTS reads explanation aloud
 - [ ] Demo app deployed on DigitalOcean
-- [ ] Bug history persisted in MongoDB Atlas
+- [x] Bug history persisted in VS Code globalState
 - [ ] TTS read-aloud works on error explanation
 - [ ] Progressive disclosure (collapsible sections) implemented
 - [ ] Simplified Mode toggle functional
@@ -566,7 +566,7 @@ flowfixer/
 | Prize | Integration | Effort |
 |-------|-------------|--------|
 | **MLH Best Use of Gemini API** | Gemini translates hostile error messages into cognitively accessible explanations — structured JSON for plain-English, simplified mode, TL;DR, and key-term extraction | Core (already in stack) |
-| **MLH Best Use of MongoDB Atlas** | Atlas for bug history persistence | ~2h |
+| ~~**MLH Best Use of MongoDB Atlas**~~ | ~~Atlas for bug history persistence~~ | Removed — using VS Code globalState instead |
 | **MLH Best Use of ElevenLabs** | TTS is a core accessibility accommodation, not a nice feature — dual-coding (Mayer, 2009) improves comprehension 25–35% for dyslexic students | ~1-2h (P0) |
 | **MLH Best Use of DigitalOcean** | Deploy demo app on App Platform | ~1h |
 
@@ -584,7 +584,7 @@ flowfixer/
 | Service | What For | Setup Time | Who |
 |---------|---------|-----------|-----|
 | **Google (Gemini API)** | LLM for error explanation + diff explanation | 5 min | Eng 3 |
-| **MongoDB Atlas** | Bug history database (free tier) | 10 min | Eng 1 |
+| ~~**MongoDB Atlas**~~ | ~~Bug history database~~ | Removed — using VS Code globalState | — |
 | **ElevenLabs** | TTS for explanation read-aloud | 5 min | Eng 2 |
 | **DigitalOcean** | Demo app hosting ($200 free credits) | 10 min | Eng 1 |
 | **GitHub** | Repo hosting | Already have | Eng 1 |
