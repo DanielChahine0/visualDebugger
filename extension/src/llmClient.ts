@@ -109,7 +109,9 @@ export async function analyzeError(request: ErrorAnalysisRequest): Promise<Phase
     return JSON.parse(text) as Phase1Response;
   } catch (err) {
     if (err instanceof FlowFixerError) throw err;
-    throw new FlowFixerError("Failed to analyze error", err);
+    const detail = extractErrorDetail(err);
+    console.error(`${LOG} analyzeError failed:`, err);
+    throw new FlowFixerError(`Failed to analyze error: ${detail}`, err);
   }
 }
 
@@ -141,8 +143,29 @@ export async function analyzeDiff(request: DiffAnalysisRequest): Promise<Phase2R
     return JSON.parse(text) as Phase2Response;
   } catch (err) {
     if (err instanceof FlowFixerError) throw err;
-    throw new FlowFixerError("Failed to analyze diff", err);
+    const detail = extractErrorDetail(err);
+    console.error(`${LOG} analyzeDiff failed:`, err);
+    throw new FlowFixerError(`Failed to analyze diff: ${detail}`, err);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Error detail extraction
+// ---------------------------------------------------------------------------
+
+/** Pull a human-readable detail string from an unknown error. */
+function extractErrorDetail(err: unknown): string {
+  if (err instanceof Error) {
+    // Google GenAI SDK often puts HTTP status in the message
+    const msg = err.message;
+    if (msg.includes("401") || msg.includes("UNAUTHENTICATED")) return "Invalid API key";
+    if (msg.includes("403") || msg.includes("PERMISSION_DENIED")) return "API key lacks permission";
+    if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) return "Rate limit exceeded — wait and retry";
+    if (msg.includes("500") || msg.includes("INTERNAL")) return "Gemini server error — retry later";
+    if (msg.includes("ENOTFOUND") || msg.includes("ECONNREFUSED") || msg.includes("fetch failed")) return "Network error — check internet connection";
+    return msg.length > 120 ? msg.slice(0, 120) + "..." : msg;
+  }
+  return String(err);
 }
 
 // ---------------------------------------------------------------------------
