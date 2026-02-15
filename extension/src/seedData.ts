@@ -78,6 +78,7 @@ export function getSeedBugRecords(): BugRecord[] {
             howToPrevent: "",
             bestPractices: "",
             keyTerms: [],
+            suggestedPrompt: "",
         };
 
         return {

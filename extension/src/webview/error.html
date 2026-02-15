@@ -67,6 +67,16 @@
             </div>
         </div>
 
+        <!-- Suggested Prompt -->
+        <div class="card slide-in" id="prompt-card" style="display: none;">
+            <div class="section">
+                <div class="section-title">Try This Prompt Instead</div>
+                <p class="text-muted text-sm mb-8">Instead of "fix the bug," try a prompt like this:</p>
+                <div class="prompt-block" id="prompt-text"></div>
+                <button class="btn btn--secondary mt-8" id="copy-prompt-btn" style="width: 100%;">Copy Prompt</button>
+            </div>
+        </div>
+
         <!-- Quiz Section -->
         <div class="card slide-in" id="quiz-card">
             <div class="section">
@@ -137,6 +147,15 @@
 
             document.getElementById('prevent-text').innerHTML = data.howToPrevent || '';
             document.getElementById('practices-text').innerHTML = data.bestPractices || '';
+
+            // 4. Suggested Prompt
+            const promptCard = document.getElementById('prompt-card');
+            if (data.suggestedPrompt) {
+                promptCard.style.display = 'block';
+                document.getElementById('prompt-text').textContent = data.suggestedPrompt;
+            } else {
+                promptCard.style.display = 'none';
+            }
 
             // 3. Quiz
             const quizCard = document.getElementById('quiz-card');
@@ -227,6 +246,7 @@
             ],
             howToPrevent: "Always initialize state variables with a sensible default value. If a variable will hold an array, initialize it as []. This prevents undefined errors when your component renders before async data arrives.",
             bestPractices: "Use optional chaining (data?.map()) and nullish coalescing (data ?? []) as defensive programming patterns. These are industry-standard approaches to safely handle values that might be null or undefined.",
+            suggestedPrompt: "Fix the TypeError in App.tsx at line 15 where data.map() fails because useState() has no initial value.\n\nContext:\n- data is used with .map() to render a list of items\n- useState() returns undefined by default when no argument is passed\n- .map() is an array method — it throws when called on undefined\n\nWhat to fix:\n- Add [] as the initial value: useState([])\n- Add a guard check before calling .map() to handle loading states\n\nExplain:\n- Why undefined causes this specific TypeError\n- What initial values prevent this class of bug\n- How to verify the fix works after applying it",
             quiz: {
                 question: "Why does calling .map() on 'data' throw a TypeError in this case?",
                 options: [
@@ -357,6 +377,36 @@
             } else {
                 ttsBtn.textContent = 'TTS Unavailable';
                 setTimeout(() => { ttsBtn.textContent = 'Read Aloud'; }, 3000);
+            }
+        });
+        // ── Copy Prompt Button ──
+        const copyPromptBtn = document.getElementById('copy-prompt-btn');
+        copyPromptBtn.addEventListener('click', async () => {
+            const promptText = document.getElementById('prompt-text').textContent;
+            try {
+                await navigator.clipboard.writeText(promptText);
+                copyPromptBtn.textContent = 'Copied!';
+                copyPromptBtn.classList.add('btn--success');
+                setTimeout(() => {
+                    copyPromptBtn.textContent = 'Copy Prompt';
+                    copyPromptBtn.classList.remove('btn--success');
+                }, 2000);
+            } catch (e) {
+                // Fallback for webview where clipboard API may not work
+                const textArea = document.createElement('textarea');
+                textArea.value = promptText;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                copyPromptBtn.textContent = 'Copied!';
+                copyPromptBtn.classList.add('btn--success');
+                setTimeout(() => {
+                    copyPromptBtn.textContent = 'Copy Prompt';
+                    copyPromptBtn.classList.remove('btn--success');
+                }, 2000);
             }
         });
     </script>

@@ -29,6 +29,7 @@ export interface ErrorExplanation {
   howToPrevent: string;
   bestPractices: string;
   keyTerms: string[];
+  suggestedPrompt: string;
   quiz?: Quiz;
 }
 
