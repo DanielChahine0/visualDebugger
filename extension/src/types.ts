@@ -97,7 +97,7 @@ export type ExtToWebviewMessage =
 /** Messages from webview -> extension host */
 export type WebviewToExtMessage =
   | { type: "quizAnswer"; answer: string }
-  | { type: "requestTts"; text: string }
+  | { type: "requestTts"; text: string; voice?: "female" | "male" }
   | { type: "explainError" }
   | { type: "diffReviewClosed" }
   | { type: "ready" };

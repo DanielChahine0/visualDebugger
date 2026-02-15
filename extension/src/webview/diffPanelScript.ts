@@ -15,6 +15,7 @@ interface DiffData {
 let activeData: DiffData | undefined;
 let currentAudio: HTMLAudioElement | undefined;
 let isSpeaking = false;
+let selectedVoice: "female" | "male" = "female";
 
 // ── Helpers ──
 
@@ -77,7 +78,9 @@ function speakWithWebSpeech(text: string): void {
     return;
   }
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.95;
+  utterance.rate = 0.9;      // slightly slower — calm, unhurried audiobook pace
+  utterance.pitch = 1.0;     // natural pitch, no distortion
+  utterance.volume = 0.85;   // slightly softer — gentle, not blaring
   isSpeaking = true;
   const btn = $("tts-btn");
   if (btn) {
@@ -187,9 +190,13 @@ window.addEventListener("message", (event) => {
     updatePanel(msg.data);
   } else if (msg.type === "playAudio") {
     stopAudio();
-    const audio = new Audio(
-      `data:${msg.data.mimeType};base64,${msg.data.base64Audio}`
-    );
+    // Convert base64 to blob URL (CSP blocks data: URIs for media)
+    const raw = atob(msg.data.base64Audio);
+    const bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+    const blob = new Blob([bytes], { type: msg.data.mimeType });
+    const blobUrl = URL.createObjectURL(blob);
+    const audio = new Audio(blobUrl);
     currentAudio = audio;
     isSpeaking = true;
     updateTtsStatus("Playing...");
@@ -199,6 +206,7 @@ window.addEventListener("message", (event) => {
       btn.classList.add("ff-btn--playing");
     }
     audio.onended = () => {
+      URL.revokeObjectURL(blobUrl);
       currentAudio = undefined;
       isSpeaking = false;
       if (btn) {
@@ -209,6 +217,7 @@ window.addEventListener("message", (event) => {
       announce("Audio finished.");
     };
     audio.onerror = () => {
+      URL.revokeObjectURL(blobUrl);
       currentAudio = undefined;
       isSpeaking = false;
       if (btn) {
@@ -219,6 +228,7 @@ window.addEventListener("message", (event) => {
       announce("Audio playback failed.");
     };
     void audio.play().catch(() => {
+      URL.revokeObjectURL(blobUrl);
       currentAudio = undefined;
       isSpeaking = false;
       if (btn) btn.textContent = "🔊 Read Aloud";
@@ -237,6 +247,24 @@ window.addEventListener("message", (event) => {
   }
 });
 
+// ── Voice toggle ──
+
+$("voice-female")?.addEventListener("click", () => {
+  selectedVoice = "female";
+  $("voice-female")!.classList.add("active");
+  $("voice-female")!.setAttribute("aria-checked", "true");
+  $("voice-male")!.classList.remove("active");
+  $("voice-male")!.setAttribute("aria-checked", "false");
+});
+
+$("voice-male")?.addEventListener("click", () => {
+  selectedVoice = "male";
+  $("voice-male")!.classList.add("active");
+  $("voice-male")!.setAttribute("aria-checked", "true");
+  $("voice-female")!.classList.remove("active");
+  $("voice-female")!.setAttribute("aria-checked", "false");
+});
+
 // ── TTS button ──
 
 const ttsBtn = $("tts-btn");
@@ -252,7 +280,7 @@ ttsBtn?.addEventListener("click", () => {
     announce("No explanation to read yet.");
     return;
   }
-  vscode.postMessage({ type: "requestTts", text });
+  vscode.postMessage({ type: "requestTts", text, voice: selectedVoice });
   ttsBtn.textContent = "⏳ Loading...";
   updateTtsStatus("Loading audio...");
 });

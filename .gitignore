@@ -12,4 +12,9 @@ dist/
 
 # Environment
 .env
+**/.env
+
+# Generated audio test artifacts
+extension/src/scripts/test_output_*.mp3
+
 **/config.js

@@ -842,7 +842,9 @@
                 return;
             }
             var u = new SpeechSynthesisUtterance(text);
-            u.rate = 0.95;
+            u.rate = 0.9;      // slightly slower — calm, unhurried audiobook pace
+            u.pitch = 1.0;     // natural pitch, no distortion
+            u.volume = 0.85;   // slightly softer — gentle, not blaring
             isSpeaking = true;
             $('tts-btn').textContent = 'Stop';
             $('tts-btn').classList.add('ff-btn--playing');
@@ -908,7 +910,7 @@
             if (!text) { announce('No explanation to read yet.'); return; }
 
             if (vscode) {
-                vscode.postMessage({ type: 'requestTts', text: text });
+                vscode.postMessage({ type: 'requestTts', text: text, voice: selectedVoice });
                 $('tts-btn').textContent = 'Loading...';
                 updateTtsStatus('Loading...');
             } else {
@@ -963,13 +965,20 @@
 
             } else if (msg.type === 'playAudio') {
                 stopAudio();
-                var audio = new Audio('data:' + msg.data.mimeType + ';base64,' + msg.data.base64Audio);
+                // Convert base64 to blob URL (CSP blocks data: URIs for media)
+                var raw = atob(msg.data.base64Audio);
+                var bytes = new Uint8Array(raw.length);
+                for (var bi = 0; bi < raw.length; bi++) bytes[bi] = raw.charCodeAt(bi);
+                var blob = new Blob([bytes], { type: msg.data.mimeType });
+                var blobUrl = URL.createObjectURL(blob);
+                var audio = new Audio(blobUrl);
                 ttsAudio = audio;
                 isSpeaking = true;
                 $('tts-btn').textContent = 'Stop';
                 $('tts-btn').classList.add('ff-btn--playing');
                 updateTtsStatus('Playing...');
                 audio.onended = function () {
+                    URL.revokeObjectURL(blobUrl);
                     ttsAudio = null; isSpeaking = false;
                     $('tts-btn').textContent = 'Read Aloud';
                     $('tts-btn').classList.remove('ff-btn--playing');
@@ -977,6 +986,7 @@
                     announce('Audio finished.');
                 };
                 audio.onerror = function () {
+                    URL.revokeObjectURL(blobUrl);
                     ttsAudio = null; isSpeaking = false;
                     $('tts-btn').textContent = 'Read Aloud';
                     $('tts-btn').classList.remove('ff-btn--playing');
@@ -984,6 +994,7 @@
                     announce('Audio playback failed.');
                 };
                 audio.play().catch(function () {
+                    URL.revokeObjectURL(blobUrl);
                     ttsAudio = null; isSpeaking = false;
                     $('tts-btn').textContent = 'Read Aloud';
                     updateTtsStatus('');

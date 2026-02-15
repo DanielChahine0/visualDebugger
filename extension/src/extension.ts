@@ -14,6 +14,8 @@ import { FlowFixerCodeLensProvider, SUPPORTED_LANGUAGES } from "./codeLensProvid
 
 const LOG = "[FlowFixer]";
 const TTS_MIME_TYPE = "audio/mpeg";
+const TTS_CACHE_TTL_MS = 10 * 60 * 1000;
+const TTS_CACHE_MAX_ENTRIES = 50;
 type StatusState =
   | "ready"
   | "needsKey"
@@ -29,6 +31,7 @@ interface MessageTarget {
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   console.log(`${LOG} activating...`);
+  const ttsCache = new Map<string, { base64Audio: string; createdAt: number }>();
 
   // --- .env support (checked before context.secrets) ---
   const envMap = loadEnv();
@@ -291,18 +294,40 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       case "requestTts": {
         const text = message.text.trim();
         if (!text) return;
+        const voice = message.voice ?? "female";
+        const cacheKey = `${voice}::${text}`;
+
+        const cached = ttsCache.get(cacheKey);
+        if (cached && Date.now() - cached.createdAt < TTS_CACHE_TTL_MS) {
+          target.postMessage({
+            type: "playAudio",
+            data: { base64Audio: cached.base64Audio, mimeType: TTS_MIME_TYPE },
+          });
+          return;
+        }
+        if (cached) {
+          ttsCache.delete(cacheKey);
+        }
 
         const elevenLabsKey = await mergedSecrets.get("visualdebugger.elevenLabsKey");
         if (!elevenLabsKey) {
           target.postMessage({
             type: "ttsError",
-            data: { message: "ElevenLabs key not set. Using browser voice fallback." },
+            data: { message: "ElevenLabs key not set. Check .env file." },
           });
           return;
         }
 
         try {
-          const base64Audio = await fetchTtsAudio(text, elevenLabsKey);
+          const base64Audio = await fetchTtsAudio(text, elevenLabsKey, voice);
+          ttsCache.set(cacheKey, { base64Audio, createdAt: Date.now() });
+          if (ttsCache.size > TTS_CACHE_MAX_ENTRIES) {
+            const oldestKey = ttsCache.keys().next().value as string | undefined;
+            if (oldestKey) {
+              ttsCache.delete(oldestKey);
+            }
+          }
+
           target.postMessage({
             type: "playAudio",
             data: { base64Audio, mimeType: TTS_MIME_TYPE },
@@ -311,7 +336,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           console.error(`${LOG} TTS request failed:`, err);
           target.postMessage({
             type: "ttsError",
-            data: { message: "TTS request failed. Using browser voice fallback." },
+            data: { message: "TTS is temporarily unavailable. Using browser voice fallback." },
           });
         }
         return;
