@@ -1,5 +1,6 @@
 const esbuild = require("esbuild");
 const path = require("path");
+const fs = require("fs");
 
 const isWatch = process.argv.includes("--watch");
 
@@ -33,6 +34,18 @@ const webviewConfig = {
   logLevel: "info",
 };
 
+function copyStaticWebviewFiles() {
+  const srcDir = path.resolve(__dirname, "src/webview");
+  const distDir = path.resolve(__dirname, "dist/webview");
+  fs.mkdirSync(distDir, { recursive: true });
+  for (const file of fs.readdirSync(srcDir)) {
+    if (file.endsWith(".html") || file.endsWith(".css") || file.endsWith(".js")) {
+      fs.copyFileSync(path.join(srcDir, file), path.join(distDir, file));
+    }
+  }
+  console.log("[esbuild] copied static webview files to dist/webview");
+}
+
 async function build() {
   if (isWatch) {
     const [extCtx, webCtx] = await Promise.all([
@@ -41,11 +54,13 @@ async function build() {
     ]);
     await Promise.all([extCtx.watch(), webCtx.watch()]);
     console.log("[esbuild] watching for changes...");
+    copyStaticWebviewFiles();
   } else {
     await Promise.all([
       esbuild.build(extensionConfig),
       esbuild.build(webviewConfig),
     ]);
+    copyStaticWebviewFiles();
     console.log("[esbuild] build complete");
   }
 }
