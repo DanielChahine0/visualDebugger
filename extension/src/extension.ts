@@ -360,9 +360,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
+  // errorListener only logs — it does NOT auto-trigger handlePhase1.
+  // The user explicitly clicks "Explain This Error" (or uses CodeLens / command
+  // palette) to analyse a single error.  Auto-triggering was burning API keys
+  // on every transient diagnostic change (line shifts, partial edits, etc.).
   errorListener.onErrorDetected((error) => {
-    console.log(`${LOG} errorListener fired: ${error.message} at ${error.file}:${error.line}`);
-    void handlePhase1(error, { trigger: "auto" });
+    console.log(`${LOG} errorListener fired (ignored): ${error.message} at ${error.file}:${error.line}`);
   });
 
   diffEngine.onDiffDetected(async (diff) => {
