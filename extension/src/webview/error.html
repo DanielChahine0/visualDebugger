@@ -10,175 +10,265 @@
 </head>
 
 <body>
-    <div id="error-panel">
-        <!-- Header with category badge -->
-        <div class="card-header">
-            <h1>Error Explanation</h1>
+    <div id="error-panel" class="ff-panel" role="main" aria-label="Error explanation">
+        <!-- Skip link for keyboard/screen-reader users -->
+        <a href="#section-quiz" class="sr-only sr-only--focusable">Skip to quiz</a>
+
+        <!-- Screen-reader live region -->
+        <div id="status-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+        <!-- ── Empty state ── -->
+        <div id="empty-state" class="ff-empty" role="status">
+            <div class="ff-empty-icon" aria-hidden="true">🔍</div>
+            <h1 class="ff-empty-heading">No errors detected yet</h1>
+            <p class="ff-empty-body">Run your program and we'll<br />explain any errors that appear.</p>
         </div>
 
-        <!-- Empty state — shown before any error is detected -->
-        <div id="empty-state" class="card" style="text-align: center; padding: 32px 16px;">
-            <p style="font-size: 1.1em; margin-bottom: 8px;">No errors detected yet.</p>
-            <p class="text-muted text-sm">Run your program and Visual Debugger will automatically explain any errors that appear.</p>
-        </div>
-
-        <!-- Error content — hidden until an error is received -->
+        <!-- ── Content (hidden until data arrives) ── -->
         <div id="error-content" style="display: none;">
 
-        <!-- Error Location Card -->
-        <div class="card slide-in" id="location-card">
-            <div class="card-header" style="border-bottom: none; margin-bottom: 8px; padding-bottom: 0;">
-                <span class="badge" id="category-badge"></span>
-                <span class="text-muted text-sm" id="error-location"></span>
-            </div>
-            <p id="error-message" style="word-break: break-word; font-family: var(--vscode-editor-font-family, monospace); background-color: var(--vscode-textCodeBlock-background); padding: 8px; border-radius: 3px;">
-            </p>
-        </div>
+            <!-- 1. Error Location -->
+            <section class="ff-section ff-section--error" id="section-error" aria-labelledby="heading-error">
+                <h2 id="heading-error" class="ff-heading">
+                    <span class="ff-icon" aria-hidden="true">🚨</span>
+                    <span id="category-badge" class="badge"></span>
+                    <span class="text-muted text-sm" id="error-location"></span>
+                </h2>
+                <p id="error-message" class="ff-body" style="font-family: var(--vscode-editor-font-family, monospace); background-color: var(--vscode-textCodeBlock-background); padding: 8px; border-radius: 3px; word-break: break-word;"></p>
+                <p class="ff-body text-muted text-sm" id="tldr-text" style="margin-top: 8px; font-weight: 600;"></p>
+            </section>
 
-        <!-- What Happened -->
-        <div class="card slide-in" id="explanation-card">
-            <div class="section">
-                <div class="section-title">What Happened</div>
-                <div class="section-content" id="explanation-text"></div>
-            </div>
-        </div>
+            <!-- 2. What Happened -->
+            <section class="ff-section ff-section--explanation" id="section-explanation" aria-labelledby="heading-explanation" style="display: none;">
+                <h2 id="heading-explanation" class="ff-heading">
+                    <span class="ff-icon" aria-hidden="true">📖</span>
+                    What Happened
+                </h2>
+                <p class="ff-body" id="explanation-text"></p>
+            </section>
 
-        <!-- How to Fix -->
-        <div class="card slide-in" id="fix-card">
-            <div class="section">
-                <div class="section-title">How to Fix</div>
-                <div class="section-content" id="fix-text"></div>
-            </div>
-        </div>
+            <!-- 3. How to Fix -->
+            <section class="ff-section ff-section--fix" id="section-fix" aria-labelledby="heading-fix" style="display: none;">
+                <h2 id="heading-fix" class="ff-heading">
+                    <span class="ff-icon" aria-hidden="true">🔧</span>
+                    How to Fix
+                </h2>
+                <div class="ff-body" id="fix-text"></div>
+            </section>
 
-        <!-- How to Prevent -->
-        <div class="card slide-in" id="prevent-card">
-            <div class="section">
-                <div class="section-title">How to Prevent</div>
-                <div class="section-content" id="prevent-text"></div>
-            </div>
-        </div>
+            <!-- 4. How to Prevent (progressive disclosure) -->
+            <section class="ff-section ff-section--prevent" id="section-prevent" aria-labelledby="heading-prevent" style="display: none;">
+                <details class="ff-disclosure">
+                    <summary class="ff-disclosure-trigger" id="heading-prevent">
+                        <span class="ff-icon" aria-hidden="true">🛡️</span>
+                        <span class="ff-disclosure-title">How to Prevent This</span>
+                        <span class="ff-disclosure-hint" aria-hidden="true">Show tip</span>
+                    </summary>
+                    <div class="ff-disclosure-body">
+                        <p class="ff-body" id="prevent-text"></p>
+                    </div>
+                </details>
+            </section>
 
-        <!-- Best Practices -->
-        <div class="card slide-in" id="practices-card">
-            <div class="section">
-                <div class="section-title">Best Practices</div>
-                <div class="section-content" id="practices-text"></div>
-            </div>
-        </div>
+            <!-- 5. Best Practices (progressive disclosure) -->
+            <section class="ff-section ff-section--practices" id="section-practices" aria-labelledby="heading-practices" style="display: none;">
+                <details class="ff-disclosure">
+                    <summary class="ff-disclosure-trigger" id="heading-practices">
+                        <span class="ff-icon" aria-hidden="true">⭐</span>
+                        <span class="ff-disclosure-title">Best Practice</span>
+                        <span class="ff-disclosure-hint" aria-hidden="true">Show details</span>
+                    </summary>
+                    <div class="ff-disclosure-body">
+                        <p class="ff-body" id="practices-text"></p>
+                    </div>
+                </details>
+            </section>
 
-        <!-- Suggested Prompt -->
-        <div class="card slide-in" id="prompt-card" style="display: none;">
-            <div class="section">
-                <div class="section-title">Try This Prompt Instead</div>
-                <p class="text-muted text-sm mb-8">Instead of "fix the bug," try a prompt like this:</p>
+            <!-- 6. Suggested Prompt -->
+            <section class="ff-section ff-section--prompt" id="section-prompt" aria-labelledby="heading-prompt" style="display: none;">
+                <h2 id="heading-prompt" class="ff-heading">
+                    <span class="ff-icon" aria-hidden="true">💬</span>
+                    Try This Prompt Instead
+                </h2>
+                <p class="ff-body text-muted text-sm" style="margin-bottom: 8px;">Instead of "fix the bug," try a prompt like this:</p>
                 <div class="prompt-block" id="prompt-text"></div>
-                <button class="btn btn--secondary mt-8" id="copy-prompt-btn" style="width: 100%;">Copy Prompt</button>
-            </div>
-        </div>
+                <button class="btn btn--secondary mt-8" id="copy-prompt-btn" style="width: 100%; min-height: 36px;" aria-label="Copy prompt to clipboard">Copy Prompt</button>
+            </section>
 
-        <!-- Quiz Section -->
-        <div class="card slide-in" id="quiz-card">
-            <div class="section">
-                <div class="section-title">Test Yourself</div>
-                <p class="mb-8" id="quiz-question"></p>
-                <div class="quiz-options" id="quiz-options">
-                    <!-- Options rendered by JS -->
+            <!-- 7. Quiz -->
+            <section class="ff-section ff-section--quiz" id="section-quiz" aria-labelledby="heading-quiz" style="display: none;">
+                <h2 id="heading-quiz" class="ff-heading">
+                    <span class="ff-icon" aria-hidden="true">🧪</span>
+                    Test Yourself
+                </h2>
+                <p class="ff-body mb-8" id="quiz-question"></p>
+                <div class="quiz-options" id="quiz-options" role="group" aria-label="Quiz answers"></div>
+                <div class="quiz-feedback" id="quiz-feedback" style="display:none;" role="alert"></div>
+            </section>
+
+            <!-- TTS controls -->
+            <div class="ff-tts-bar" id="tts-controls" style="display: none;" role="region" aria-label="Read aloud controls">
+                <div class="ff-voice-group" role="radiogroup" aria-label="Voice">
+                    <button class="ff-voice-btn active" id="voice-female" role="radio" aria-checked="true">Female voice</button>
+                    <button class="ff-voice-btn" id="voice-male" role="radio" aria-checked="false">Male voice</button>
                 </div>
-                <div class="quiz-feedback" id="quiz-feedback" style="display:none;"></div>
+                <button class="ff-btn--tts" id="tts-btn" aria-label="Read explanation aloud">🔊 Read Aloud</button>
+                <span class="ff-tts-status" id="tts-status" aria-live="polite"></span>
             </div>
-        </div>
 
         </div><!-- close #error-content -->
-
-        <!-- TTS Controls -->
-        <div class="mt-12" id="tts-controls" style="display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 20px;">
-            <div class="voice-toggle-group">
-                <button class="voice-toggle active" id="voice-female">Female</button>
-                <button class="voice-toggle" id="voice-male">Male</button>
-            </div>
-            <button class="btn btn--secondary" id="tts-btn">Read Aloud</button>
-        </div>
     </div>
 
     <script>
         // ── State ──
         let quizAnswered = false;
         let currentErrorData = null;
+        let ttsAudio = null;
+        let isSpeaking = false;
+        let selectedVoice = 'female';
+
+        // ── VS Code API ──
+        let vscode;
+        try {
+            vscode = acquireVsCodeApi();
+            window.vscode = vscode;
+        } catch (e) {
+            console.log("Browser preview mode (no VS Code API)");
+        }
+
+        // ── Helpers (matching diff.html patterns) ──
+        function $(id) { return document.getElementById(id); }
+
+        function announce(msg) {
+            var el = $('status-live');
+            if (el) el.textContent = msg;
+        }
+
+        function showSection(id, hasData) {
+            var el = $(id);
+            if (el) el.style.display = hasData ? '' : 'none';
+        }
+
+        function updateTtsStatus(text) {
+            $('tts-status').textContent = text;
+        }
 
         // ── Helper: map quiz letter ("A"/"B"/"C"/"D") to 0-indexed number ──
         function quizCorrectIndex(val) {
             if (typeof val === 'number') return val;
-            const map = { A: 0, B: 1, C: 2, D: 3 };
+            var map = { A: 0, B: 1, C: 2, D: 3 };
             return map[val] ?? 0;
         }
+
+        function cleanTextForTTS(html) {
+            if (!html) return '';
+            return html
+                .replace(/<[^>]*>/g, '')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        // ── Disclosure hint toggle ──
+        document.querySelectorAll('.ff-disclosure').forEach(function (details) {
+            details.addEventListener('toggle', function () {
+                var hint = details.querySelector('.ff-disclosure-hint');
+                if (!hint) return;
+                var isPrevent = details.closest('#section-prevent');
+                var showText = isPrevent ? 'Show tip' : 'Show details';
+                var hideText = isPrevent ? 'Hide tip' : 'Hide details';
+                hint.textContent = details.open ? hideText : showText;
+            });
+        });
 
         // ── Main Update Function ──
         function updatePanel(data) {
             currentErrorData = data;
             quizAnswered = false;
 
-            // 1. Header & Location
-            const badge = document.getElementById('category-badge');
+            // 1. Error Location & Badge
+            var badge = $('category-badge');
             badge.textContent = data.category;
-            badge.className = 'badge'; // Reset classes
-            badge.setAttribute('data-type', data.category.split(' ')[0]); // For CSS targeting (Syntax/Logic/Runtime)
-            
-            // Add specific logic for badge color fallback if CSS variable targeting fails
-            const type = data.category.split(' ')[0];
-            if(type === 'Syntax') { badge.style.color = 'var(--ff-syntax)'; badge.style.borderColor = 'var(--ff-syntax)'; }
-            else if(type === 'Logic') { badge.style.color = 'var(--ff-logic)'; badge.style.borderColor = 'var(--ff-logic)'; }
-            else if(type === 'Runtime') { badge.style.color = 'var(--ff-runtime)'; badge.style.borderColor = 'var(--ff-runtime)'; }
-            
-            document.getElementById('error-location').textContent = data.location || (data.raw && data.raw.file + ':' + data.raw.line) || '';
-            const errorMsg = data.errorMessage || (data.raw && data.raw.message) || '';
-            document.getElementById('error-message').textContent = errorMsg;
+            badge.className = 'badge';
+            badge.setAttribute('data-type', data.category.split(' ')[0]);
 
-            // 2. Content Sections
-            document.getElementById('explanation-text').innerHTML = data.explanation;
+            var type = data.category.split(' ')[0];
+            if (type === 'Syntax') { badge.style.color = 'var(--ff-syntax)'; badge.style.borderColor = 'var(--ff-syntax)'; }
+            else if (type === 'Logic') { badge.style.color = 'var(--ff-logic)'; badge.style.borderColor = 'var(--ff-logic)'; }
+            else if (type === 'Runtime') { badge.style.color = 'var(--ff-runtime)'; badge.style.borderColor = 'var(--ff-runtime)'; }
 
-            const howToFix = data.howToFix;
-            if (Array.isArray(howToFix)) {
-                const fixList = howToFix.map(step => `<li>${step}</li>`).join('');
-                document.getElementById('fix-text').innerHTML = `<ol style="padding-left: 18px; margin: 0;">${fixList}</ol>`;
+            $('error-location').textContent = data.location || (data.raw && data.raw.file + ':' + data.raw.line) || '';
+            var errorMsg = data.errorMessage || (data.raw && data.raw.message) || '';
+            $('error-message').textContent = errorMsg;
+
+            // TL;DR
+            var tldr = $('tldr-text');
+            if (data.tldr) {
+                tldr.textContent = data.tldr;
+                tldr.style.display = '';
             } else {
-                document.getElementById('fix-text').innerHTML = howToFix || '';
+                tldr.style.display = 'none';
             }
 
-            document.getElementById('prevent-text').innerHTML = data.howToPrevent || '';
-            document.getElementById('practices-text').innerHTML = data.bestPractices || '';
+            // 2. What Happened
+            var hasExplanation = !!data.explanation;
+            showSection('section-explanation', hasExplanation);
+            if (hasExplanation) $('explanation-text').innerHTML = data.explanation;
 
-            // 4. Suggested Prompt
-            const promptCard = document.getElementById('prompt-card');
-            if (data.suggestedPrompt) {
-                promptCard.style.display = 'block';
-                document.getElementById('prompt-text').textContent = data.suggestedPrompt;
-            } else {
-                promptCard.style.display = 'none';
+            // 3. How to Fix
+            var hasFixData = !!(data.howToFix && (Array.isArray(data.howToFix) ? data.howToFix.length > 0 : data.howToFix));
+            showSection('section-fix', hasFixData);
+            if (hasFixData) {
+                if (Array.isArray(data.howToFix)) {
+                    var fixList = data.howToFix.map(function (step) { return '<li>' + step + '</li>'; }).join('');
+                    $('fix-text').innerHTML = '<ol style="padding-left: 18px; margin: 0;">' + fixList + '</ol>';
+                } else {
+                    $('fix-text').innerHTML = data.howToFix;
+                }
             }
 
-            // 3. Quiz
-            const quizCard = document.getElementById('quiz-card');
-            if (data.quiz) {
-                const correctIdx = quizCorrectIndex(data.quiz.correct);
-                quizCard.style.display = 'block';
-                document.getElementById('quiz-question').innerHTML = data.quiz.question;
-                const quizOptions = document.getElementById('quiz-options');
+            // 4. How to Prevent
+            var hasPrevent = !!data.howToPrevent;
+            showSection('section-prevent', hasPrevent);
+            if (hasPrevent) $('prevent-text').innerHTML = data.howToPrevent;
+
+            // 5. Best Practices
+            var hasPractices = !!data.bestPractices;
+            showSection('section-practices', hasPractices);
+            if (hasPractices) $('practices-text').innerHTML = data.bestPractices;
+
+            // 6. Suggested Prompt
+            var hasPrompt = !!data.suggestedPrompt;
+            showSection('section-prompt', hasPrompt);
+            if (hasPrompt) $('prompt-text').textContent = data.suggestedPrompt;
+
+            // 7. Quiz
+            var hasQuiz = !!data.quiz;
+            showSection('section-quiz', hasQuiz);
+            if (hasQuiz) {
+                var correctIdx = quizCorrectIndex(data.quiz.correct);
+                $('quiz-question').innerHTML = data.quiz.question;
+                var quizOptions = $('quiz-options');
                 quizOptions.innerHTML = '';
-                document.getElementById('quiz-feedback').style.display = 'none';
+                $('quiz-feedback').style.display = 'none';
 
-                data.quiz.options.forEach((option, index) => {
-                    const optionEl = document.createElement('div');
+                data.quiz.options.forEach(function (option, index) {
+                    var optionEl = document.createElement('div');
                     optionEl.className = 'quiz-option';
                     optionEl.textContent = option;
                     optionEl.style.animationDelay = (index * 0.05) + 's';
+                    optionEl.style.minHeight = '36px';
                     optionEl.classList.add('slide-in');
-                    
-                    optionEl.addEventListener('click', () => {
+
+                    optionEl.addEventListener('click', function () {
                         if (quizAnswered) return;
                         quizAnswered = true;
 
-                        document.querySelectorAll('.quiz-option').forEach((el, i) => {
+                        document.querySelectorAll('.quiz-option').forEach(function (el, i) {
                             el.setAttribute('data-answered', 'true');
                             el.style.cursor = 'default';
                             if (i === correctIdx) {
@@ -190,15 +280,14 @@
                             }
                         });
 
-                        const isCorrect = index === correctIdx;
-                        const fb = document.getElementById('quiz-feedback');
+                        var isCorrect = index === correctIdx;
+                        var fb = $('quiz-feedback');
                         fb.textContent = isCorrect
                             ? 'Correct! ' + data.quiz.explanation
                             : 'Not quite. ' + data.quiz.explanation;
                         fb.style.display = 'block';
-                        // Add class for specific coloring based on result
-                        fb.className = 'quiz-feedback'; // reset
-                        if(isCorrect) fb.style.borderLeftColor = 'var(--ff-success)';
+                        fb.className = 'quiz-feedback';
+                        if (isCorrect) fb.style.borderLeftColor = 'var(--ff-success)';
                         else fb.style.borderLeftColor = 'var(--ff-runtime)';
 
                         if (window.vscode) {
@@ -207,37 +296,180 @@
                     });
                     quizOptions.appendChild(optionEl);
                 });
-            } else {
-                quizCard.style.display = 'none';
             }
 
             // Show content, hide empty state
-            document.getElementById('empty-state').style.display = 'none';
-            document.getElementById('error-content').style.display = 'block';
-            document.getElementById('tts-controls').style.display = 'flex';
+            $('empty-state').style.display = 'none';
+            $('error-content').style.display = 'block';
+            $('tts-controls').style.display = '';
+            updateTtsStatus('');
+
+            announce('Error explanation updated.');
         }
 
-        // ── VS Code Integration ──
-        let vscode;
-        try {
-            vscode = acquireVsCodeApi();
-            window.vscode = vscode;
-        } catch (e) {
-            console.log("Browser preview mode (no VS Code API)");
+        // ── Listen for messages from extension host ──
+        window.addEventListener('message', function (event) {
+            var msg = event.data;
+
+            if (msg.type === 'showError') {
+                updatePanel(msg.data);
+
+            } else if (msg.type === 'playAudio') {
+                stopAudio();
+                var audio = new Audio('data:' + msg.data.mimeType + ';base64,' + msg.data.base64Audio);
+                ttsAudio = audio;
+                isSpeaking = true;
+                $('tts-btn').textContent = '⏹️ Stop';
+                $('tts-btn').classList.add('ff-btn--playing');
+                updateTtsStatus('Playing...');
+                audio.onended = function () {
+                    ttsAudio = null; isSpeaking = false;
+                    $('tts-btn').textContent = '🔊 Read Aloud';
+                    $('tts-btn').classList.remove('ff-btn--playing');
+                    updateTtsStatus('');
+                    announce('Audio finished.');
+                };
+                audio.onerror = function () {
+                    ttsAudio = null; isSpeaking = false;
+                    $('tts-btn').textContent = '🔊 Read Aloud';
+                    $('tts-btn').classList.remove('ff-btn--playing');
+                    updateTtsStatus('');
+                    announce('Audio playback failed.');
+                };
+                audio.play().catch(function () {
+                    ttsAudio = null; isSpeaking = false;
+                    $('tts-btn').textContent = '🔊 Read Aloud';
+                    updateTtsStatus('');
+                    announce('Could not play audio.');
+                });
+
+            } else if (msg.type === 'ttsError') {
+                announce(msg.data.message);
+                updateTtsStatus('Using browser voice...');
+                speakWithWebSpeech(getReadableText());
+
+            } else if (msg.type === 'clear') {
+                stopAudio();
+                $('empty-state').style.display = '';
+                $('error-content').style.display = 'none';
+            }
+        });
+
+        // ── TTS helpers ──
+        function getReadableText() {
+            if (!currentErrorData) return '';
+            var data = currentErrorData;
+            var fixText = Array.isArray(data.howToFix) ? data.howToFix.join('. ') : (data.howToFix || '');
+            return cleanTextForTTS([
+                data.explanation,
+                'Here is how to fix it. ' + fixText,
+                'To prevent this in the future: ' + (data.howToPrevent || ''),
+            ].join('. '));
         }
 
-        window.addEventListener('message', (event) => {
-            const { type, data } = event.data;
-            if (type === 'showError') {
-                updatePanel(data);
+        function stopAudio() {
+            if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            isSpeaking = false;
+            updateTtsStatus('');
+        }
+
+        function speakWithWebSpeech(text) {
+            if (!('speechSynthesis' in window) || !text) {
+                announce('Text-to-speech is not available.');
+                updateTtsStatus('');
+                return;
+            }
+            var u = new SpeechSynthesisUtterance(text);
+            u.rate = 0.95;
+            isSpeaking = true;
+            $('tts-btn').textContent = '⏹️ Stop';
+            $('tts-btn').classList.add('ff-btn--playing');
+            updateTtsStatus('Playing...');
+            u.onend = function () {
+                isSpeaking = false;
+                $('tts-btn').textContent = '🔊 Read Aloud';
+                $('tts-btn').classList.remove('ff-btn--playing');
+                updateTtsStatus('');
+            };
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(u);
+        }
+
+        // ── Voice toggle ──
+        $('voice-female').addEventListener('click', function () {
+            selectedVoice = 'female';
+            $('voice-female').classList.add('active');
+            $('voice-female').setAttribute('aria-checked', 'true');
+            $('voice-male').classList.remove('active');
+            $('voice-male').setAttribute('aria-checked', 'false');
+        });
+
+        $('voice-male').addEventListener('click', function () {
+            selectedVoice = 'male';
+            $('voice-male').classList.add('active');
+            $('voice-male').setAttribute('aria-checked', 'true');
+            $('voice-female').classList.remove('active');
+            $('voice-female').setAttribute('aria-checked', 'false');
+        });
+
+        // ── TTS button ──
+        $('tts-btn').addEventListener('click', function () {
+            if (isSpeaking) {
+                stopAudio();
+                $('tts-btn').textContent = '🔊 Read Aloud';
+                $('tts-btn').classList.remove('ff-btn--playing');
+                updateTtsStatus('');
+                return;
+            }
+            var text = getReadableText();
+            if (!text) { announce('No explanation to read yet.'); return; }
+
+            if (vscode) {
+                vscode.postMessage({ type: 'requestTts', text: text });
+                $('tts-btn').textContent = '⏳ Loading...';
+                updateTtsStatus('Loading...');
+            } else {
+                speakWithWebSpeech(text);
+            }
+        });
+
+        // ── Copy Prompt Button ──
+        $('copy-prompt-btn').addEventListener('click', async function () {
+            var promptText = $('prompt-text').textContent;
+            try {
+                await navigator.clipboard.writeText(promptText);
+                $('copy-prompt-btn').textContent = 'Copied!';
+                $('copy-prompt-btn').classList.add('btn--success');
+                setTimeout(function () {
+                    $('copy-prompt-btn').textContent = 'Copy Prompt';
+                    $('copy-prompt-btn').classList.remove('btn--success');
+                }, 2000);
+            } catch (e) {
+                // Fallback for webview where clipboard API may not work
+                var textArea = document.createElement('textarea');
+                textArea.value = promptText;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                $('copy-prompt-btn').textContent = 'Copied!';
+                $('copy-prompt-btn').classList.add('btn--success');
+                setTimeout(function () {
+                    $('copy-prompt-btn').textContent = 'Copy Prompt';
+                    $('copy-prompt-btn').classList.remove('btn--success');
+                }, 2000);
             }
         });
 
         // ── Initialization (Mock Data for Preview) ──
-        const MOCK_ERROR_DATA = {
+        var MOCK_ERROR_DATA = {
             category: "Runtime Error",
             location: "App.tsx, line 15",
             errorMessage: "TypeError: Cannot read properties of undefined (reading 'map')",
+            tldr: "You called .map() on undefined — initialize your state with [].",
             explanation: "You're trying to call .map() on a variable called 'data', but 'data' is undefined. This means the variable hasn't been assigned a value yet — likely because an API call hasn't finished loading when the component tries to render.",
             howToFix: [
                 "Go to line 15 in App.tsx",
@@ -255,7 +487,7 @@
                     "C) The API returned an error",
                     "D) .map() only works on strings, not arrays"
                 ],
-                correct: 1, // B (0-indexed)
+                correct: 1,
                 explanation: "Correct! The state variable 'data' was not given a default value (like []), so it starts as undefined. When React tries to render before the API data arrives, it calls .map() on undefined, which crashes."
             }
         };
@@ -265,150 +497,6 @@
         } else {
             vscode.postMessage({ type: 'ready' });
         }
-
-        // ── ElevenLabs TTS ──
-        const VOICES = {
-            female: { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah' },
-            male: { id: 'iP95p4xoKVk53GoZ742B', name: 'Chris' }
-        };
-        let selectedVoice = 'female';
-        
-        const voiceFemaleBtn = document.getElementById('voice-female');
-        const voiceMaleBtn = document.getElementById('voice-male');
-        
-        voiceFemaleBtn.addEventListener('click', () => {
-            selectedVoice = 'female';
-            voiceFemaleBtn.classList.add('active');
-            voiceMaleBtn.classList.remove('active');
-        });
-        voiceMaleBtn.addEventListener('click', () => {
-            selectedVoice = 'male';
-            voiceMaleBtn.classList.add('active');
-            voiceFemaleBtn.classList.remove('active');
-        });
-
-        function cleanTextForTTS(html) {
-            if (!html) return '';
-            return html
-                .replace(/<code>/g, '')
-                .replace(/<\/code>/g, '')
-                .replace(/<strong>/g, '')
-                .replace(/<\/strong>/g, '')
-                .replace(/<em>/g, '')
-                .replace(/<\/em>/g, '')
-                .replace(/<[^>]*>/g, '')
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'")
-                .replace(/\s+/g, ' ')
-                .trim();
-        }
-
-        const ttsBtn = document.getElementById('tts-btn');
-        let ttsAudio = null;
-        let isSpeaking = false;
-
-        ttsBtn.addEventListener('click', async () => {
-            if (isSpeaking && ttsAudio) {
-                ttsAudio.pause();
-                ttsAudio = null;
-                isSpeaking = false;
-                ttsBtn.textContent = 'Read Aloud';
-                return;
-            }
-
-            const data = currentErrorData || MOCK_ERROR_DATA;
-            const fixText = Array.isArray(data.howToFix) ? data.howToFix.join('. ') : (data.howToFix || '');
-            const textToRead = cleanTextForTTS([
-                data.explanation,
-                'Here is how to fix it. ' + fixText,
-                'To prevent this in the future: ' + (data.howToPrevent || ''),
-            ].join('. '));
-
-            const apiKey = (typeof ELEVENLABS_API_KEY !== 'undefined' && ELEVENLABS_API_KEY !== 'your_api_key_here')
-                ? ELEVENLABS_API_KEY : null;
-
-            ttsBtn.textContent = 'Loading...';
-
-            if (apiKey) {
-                try {
-                    const voice = VOICES[selectedVoice];
-                    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice.id}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'xi-api-key': apiKey },
-                        body: JSON.stringify({
-                            text: textToRead,
-                            model_id: 'eleven_turbo_v2_5',
-                            voice_settings: {
-                                stability: 0.50,
-                                similarity_boost: 0.65,
-                                style: 0.10,
-                                use_speaker_boost: true
-                            }
-                        })
-                    });
-                    if (!res.ok) throw new Error('API Error');
-                    const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
-                    ttsAudio = new Audio(url);
-                    isSpeaking = true;
-                    ttsBtn.textContent = 'Stop';
-                    ttsAudio.onended = () => {
-                        isSpeaking = false;
-                        ttsBtn.textContent = 'Read Aloud';
-                        URL.revokeObjectURL(url);
-                    };
-                    ttsAudio.play();
-                    return;
-                } catch (e) {
-                    console.warn('ElevenLabs TTS error:', e);
-                }
-            }
-
-            // Fallback
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(textToRead);
-                isSpeaking = true;
-                ttsBtn.textContent = 'Stop';
-                utterance.onend = () => { isSpeaking = false; ttsBtn.textContent = 'Read Aloud'; };
-                speechSynthesis.speak(utterance);
-            } else {
-                ttsBtn.textContent = 'TTS Unavailable';
-                setTimeout(() => { ttsBtn.textContent = 'Read Aloud'; }, 3000);
-            }
-        });
-        // ── Copy Prompt Button ──
-        const copyPromptBtn = document.getElementById('copy-prompt-btn');
-        copyPromptBtn.addEventListener('click', async () => {
-            const promptText = document.getElementById('prompt-text').textContent;
-            try {
-                await navigator.clipboard.writeText(promptText);
-                copyPromptBtn.textContent = 'Copied!';
-                copyPromptBtn.classList.add('btn--success');
-                setTimeout(() => {
-                    copyPromptBtn.textContent = 'Copy Prompt';
-                    copyPromptBtn.classList.remove('btn--success');
-                }, 2000);
-            } catch (e) {
-                // Fallback for webview where clipboard API may not work
-                const textArea = document.createElement('textarea');
-                textArea.value = promptText;
-                textArea.style.position = 'fixed';
-                textArea.style.opacity = '0';
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                copyPromptBtn.textContent = 'Copied!';
-                copyPromptBtn.classList.add('btn--success');
-                setTimeout(() => {
-                    copyPromptBtn.textContent = 'Copy Prompt';
-                    copyPromptBtn.classList.remove('btn--success');
-                }, 2000);
-            }
-        });
     </script>
 </body>
 </html>
