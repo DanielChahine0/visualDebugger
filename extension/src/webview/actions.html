@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quick Actions — Visual Debugger</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        .actions-panel {
+            padding: 12px 8px;
+        }
+
+        .actions-error-count {
+            font-size: 0.85em;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .actions-error-count .count-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 10px;
+            background: var(--ff-runtime, #f14c4c);
+            color: #fff;
+            font-size: 0.8em;
+            font-weight: 700;
+        }
+
+        .actions-error-preview {
+            font-family: var(--vscode-editor-font-family, monospace);
+            font-size: 0.85em;
+            color: var(--vscode-foreground);
+            background: var(--vscode-textCodeBlock-background);
+            border: 1px solid var(--vscode-widget-border);
+            border-left: 3px solid var(--ff-runtime, #f14c4c);
+            border-radius: 0 4px 4px 0;
+            padding: 10px 12px;
+            margin-bottom: 14px;
+            word-break: break-word;
+            line-height: 1.5;
+            max-height: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .actions-btn-explain {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            min-height: 48px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            transition: background-color 0.1s ease-in-out, transform 0.05s ease-in-out;
+        }
+
+        .actions-btn-explain:hover {
+            background: var(--vscode-button-hoverBackground);
+        }
+
+        .actions-btn-explain:active {
+            transform: scale(0.98);
+        }
+
+        .actions-btn-explain:focus-visible {
+            outline: 2px solid var(--vscode-focusBorder);
+            outline-offset: 2px;
+        }
+
+        .actions-empty {
+            text-align: center;
+            padding: 24px 16px;
+        }
+
+        .actions-empty-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+
+        .actions-empty-heading {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--vscode-foreground);
+            margin-bottom: 6px;
+        }
+
+        .actions-empty-body {
+            font-size: 0.9em;
+            color: var(--vscode-descriptionForeground);
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="actions-panel" role="main" aria-label="Quick Actions">
+        <!-- Screen-reader live region -->
+        <div id="status-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+        <!-- Has errors state -->
+        <div id="errors-state" style="display: none;">
+            <div class="actions-error-count" id="error-count-bar">
+                <span class="count-badge" id="error-count">0</span>
+                <span id="error-file-label">errors in this file</span>
+            </div>
+            <div class="actions-error-preview" id="error-preview" aria-label="First error message"></div>
+            <button class="actions-btn-explain" id="explain-btn" aria-label="Explain this error">
+                Explain This Error
+            </button>
+        </div>
+
+        <!-- No errors state -->
+        <div id="empty-state" class="actions-empty" role="status">
+            <div class="actions-empty-icon" aria-hidden="true">&#x2705;</div>
+            <div class="actions-empty-heading">No errors found</div>
+            <div class="actions-empty-body">Open a file with errors to get started.</div>
+        </div>
+    </div>
+
+    <script>
+        var vscode;
+        try {
+            vscode = acquireVsCodeApi();
+        } catch (e) {
+            console.log("Browser preview mode");
+        }
+
+        function $(id) { return document.getElementById(id); }
+
+        function announce(msg) {
+            var el = $('status-live');
+            if (el) el.textContent = msg;
+        }
+
+        function updateState(data) {
+            if (data.count > 0 && data.firstError) {
+                $('errors-state').style.display = '';
+                $('empty-state').style.display = 'none';
+
+                $('error-count').textContent = String(data.count);
+                var fileName = data.fileName || 'this file';
+                var label = data.count === 1
+                    ? '1 error in ' + fileName
+                    : data.count + ' errors in ' + fileName;
+                $('error-file-label').textContent = label;
+                $('error-preview').textContent = data.firstError.message;
+
+                announce(label);
+            } else {
+                $('errors-state').style.display = 'none';
+                $('empty-state').style.display = '';
+                announce('No errors found.');
+            }
+        }
+
+        $('explain-btn').addEventListener('click', function () {
+            if (vscode) {
+                vscode.postMessage({ type: 'explainError' });
+            }
+        });
+
+        window.addEventListener('message', function (event) {
+            var msg = event.data;
+            if (msg.type === 'updateErrors') {
+                updateState(msg.data);
+            } else if (msg.type === 'clear') {
+                updateState({ count: 0, fileName: '', firstError: null });
+            }
+        });
+
+        if (vscode) {
+            vscode.postMessage({ type: 'ready' });
+        }
+    </script>
+</body>
+
+</html>

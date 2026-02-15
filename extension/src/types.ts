@@ -91,10 +91,12 @@ export type ExtToWebviewMessage =
   | { type: "showDashboard"; data: { bugs: BugRecord[] } }
   | { type: "playAudio"; data: { base64Audio: string; mimeType: string } }
   | { type: "ttsError"; data: { message: string } }
+  | { type: "updateErrors"; data: { count: number; fileName: string; firstError: { file: string; line: number; message: string } | null } }
   | { type: "clear" };
 
 /** Messages from webview -> extension host */
 export type WebviewToExtMessage =
   | { type: "quizAnswer"; answer: string }
   | { type: "requestTts"; text: string }
+  | { type: "explainError" }
   | { type: "ready" };

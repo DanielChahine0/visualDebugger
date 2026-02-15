@@ -6,6 +6,7 @@ import { FlowFixerStorage } from "./storage";
 import { ErrorPanelProvider } from "./panels/ErrorPanel";
 import { DiffPanelProvider } from "./panels/DiffPanel";
 import { DashboardPanelProvider } from "./panels/DashboardPanel";
+import { ActionsPanelProvider } from "./panels/ActionsPanel";
 import { CapturedError, BugRecord, WebviewToExtMessage } from "./types";
 
 import { getSeedBugRecords } from "./seedData";
@@ -63,11 +64,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const mongoUri = await mergedSecrets.get("flowfixer.mongoUri");
   const storage = new FlowFixerStorage(context.globalState, mongoUri);
 
+  const actionsPanel = new ActionsPanelProvider(context.extensionUri);
   const errorPanel = new ErrorPanelProvider(context.extensionUri);
   const diffPanel = new DiffPanelProvider(context.extensionUri);
   const dashboardPanel = new DashboardPanelProvider(context.extensionUri);
 
   context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(ActionsPanelProvider.viewType, actionsPanel),
     vscode.window.registerWebviewViewProvider(ErrorPanelProvider.viewType, errorPanel),
     vscode.window.registerWebviewViewProvider(DiffPanelProvider.viewType, diffPanel),
     vscode.window.registerWebviewViewProvider(DashboardPanelProvider.viewType, dashboardPanel)
@@ -80,6 +83,46 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.languages.registerCodeLensProvider(codeLensSelector, codeLensProvider),
     codeLensProvider
   );
+
+  // --- Actions panel: sync diagnostics from active editor ---
+  function updateActionsPanel(): void {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      actionsPanel.postMessage({ type: "updateErrors", data: { count: 0, fileName: "", firstError: null } });
+      return;
+    }
+    const doc = editor.document;
+    const diagnostics = vscode.languages.getDiagnostics(doc.uri);
+    const errors = diagnostics.filter((d) => d.severity === vscode.DiagnosticSeverity.Error);
+
+    const fileName = doc.uri.fsPath.split(/[\\/]/).pop() ?? doc.uri.fsPath;
+
+    if (errors.length > 0) {
+      const first = errors[0];
+      actionsPanel.postMessage({
+        type: "updateErrors",
+        data: {
+          count: errors.length,
+          fileName,
+          firstError: {
+            file: doc.uri.fsPath,
+            line: first.range.start.line + 1,
+            message: first.message,
+          },
+        },
+      });
+    } else {
+      actionsPanel.postMessage({ type: "updateErrors", data: { count: 0, fileName, firstError: null } });
+    }
+  }
+
+  context.subscriptions.push(
+    vscode.languages.onDidChangeDiagnostics(() => updateActionsPanel()),
+    vscode.window.onDidChangeActiveTextEditor(() => updateActionsPanel())
+  );
+
+  // Fire once on activation to pick up existing errors
+  setTimeout(updateActionsPanel, 300);
 
   async function getBugsWithFallback(): Promise<BugRecord[]> {
     const stored = await storage.getAll();
@@ -260,6 +303,41 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   context.subscriptions.push(
+    actionsPanel.onMessage((msg) => {
+      if (msg.type === "explainError") {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+        const doc = editor.document;
+        const diagnostics = vscode.languages.getDiagnostics(doc.uri);
+        const errors = diagnostics.filter((d) => d.severity === vscode.DiagnosticSeverity.Error);
+        if (errors.length === 0) return;
+
+        const first = errors[0];
+        const line = first.range.start.line + 1;
+        const lines = doc.getText().split("\n");
+        const start = Math.max(0, line - 11);
+        const end = Math.min(lines.length, line + 10);
+        const codeContext = lines
+          .slice(start, end)
+          .map((l, i) => `${start + i + 1} | ${l}`)
+          .join("\n");
+
+        const captured: CapturedError = {
+          message: first.message,
+          file: doc.uri.fsPath,
+          line,
+          language: doc.languageId,
+          codeContext,
+          severity: "error",
+          source: "diagnostics",
+          timestamp: Date.now(),
+        };
+
+        void handlePhase1(captured);
+      } else {
+        void handleWebviewMessage("error", actionsPanel, msg);
+      }
+    }),
     errorPanel.onMessage((msg) => {
       void handleWebviewMessage("error", errorPanel, msg);
     }),

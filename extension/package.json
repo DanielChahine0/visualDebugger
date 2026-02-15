@@ -16,6 +16,7 @@
     "onLanguage:typescript",
     "onLanguage:javascriptreact",
     "onLanguage:typescriptreact",
+    "onView:flowfixer.actionsPanel",
     "onView:flowfixer.errorPanel",
     "onView:flowfixer.diffPanel",
     "onView:flowfixer.dashboardPanel",
@@ -89,6 +90,11 @@
     },
     "views": {
       "flowfixer": [
+        {
+          "type": "webview",
+          "id": "flowfixer.actionsPanel",
+          "name": "Quick Actions"
+        },
         {
           "type": "webview",
           "id": "flowfixer.errorPanel",
