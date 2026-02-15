@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 export default function GreetingCard() {
   const [name, setName] = useState('')
-  const [showCard, setShowCard] = 
+  const [showCard, setShowCard] = useState(false)
 
   return (
     <div className="component-container">
@@ -28,3 +28,4 @@ export default function GreetingCard() {
       )}
     </div>
   )
+}

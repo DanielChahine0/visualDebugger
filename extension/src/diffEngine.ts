@@ -47,6 +47,7 @@ export class DiffEngine implements vscode.Disposable {
     this.disposables.push(
       vscode.languages.onDidChangeDiagnostics((e) => {
         if (!this.tracking || !this.trackedUri) {
+          console.log(`${LOG} onDidChangeDiagnostics: not tracking, skipping`);
           return;
         }
 
@@ -70,9 +71,11 @@ export class DiffEngine implements vscode.Disposable {
         const errors = diagnostics.filter(
           (d) => d.severity === vscode.DiagnosticSeverity.Error
         );
+        console.log(`${LOG} tracked file diagnostics: ${errors.length} errors`);
 
         if (errors.length === 0) {
           // Errors cleared — a fix was applied. Debounce briefly so content settles.
+          console.log(`${LOG} errors cleared on ${trackedUriObj.fsPath}, starting 500ms debounce`);
           // Capture the URI NOW so a later startTracking() call can't overwrite it.
           const clearedUri = this.trackedUri;
           if (this.diagDebounceTimer) {
@@ -180,6 +183,7 @@ export class DiffEngine implements vscode.Disposable {
 
     // Skip if content hasn't actually changed
     if (before === after) {
+      console.log(`${LOG} before === after for ${doc.fileName}, skipping diff`);
       // Keep the baseline snapshot; saves can happen before AI applies the fix.
       return;
     }

@@ -99,4 +99,5 @@ export type WebviewToExtMessage =
   | { type: "quizAnswer"; answer: string }
   | { type: "requestTts"; text: string }
   | { type: "explainError" }
+  | { type: "diffReviewClosed" }
   | { type: "ready" };
