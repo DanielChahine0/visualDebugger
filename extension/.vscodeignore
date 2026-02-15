@@ -7,3 +7,6 @@ esbuild.js
 *.ts
 !dist/**
 .gitignore
+.env
+.env.*
+dist/**/*.map

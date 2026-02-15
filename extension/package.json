@@ -1,9 +1,14 @@
 {
-  "name": "flowfixer",
+  "name": "visualdebugger",
   "displayName": "Visual Debugger",
-  "description": "Visual Debugger — explains errors before the fix, reviews AI changes after",
+  "description": "Visual Debugger - explains errors before the fix, reviews AI changes after",
   "version": "0.1.0",
-  "publisher": "flowfixer-team",
+  "publisher": "visualdebugger-team",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kurtjallo/visualDebugger.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -16,90 +21,90 @@
     "onLanguage:typescript",
     "onLanguage:javascriptreact",
     "onLanguage:typescriptreact",
-    "onView:flowfixer.debugPanel",
-    "onView:flowfixer.dashboardPanel",
-    "onCommand:flowfixer.showErrorPanel",
-    "onCommand:flowfixer.showDiffPanel",
-    "onCommand:flowfixer.showDashboard",
-    "onCommand:flowfixer.setGeminiKey",
-    "onCommand:flowfixer.setElevenLabsKey",
-    "onCommand:flowfixer.setMongoUri",
-    "onCommand:flowfixer.setElevenLabsKey",
-    "onCommand:flowfixer.analyzeCurrentFile",
-    "onCommand:flowfixer.explainCodeLensError",
-    "onCommand:flowfixer.fixCodeLensError"
+    "onView:visualdebugger.debugPanel",
+    "onView:visualdebugger.dashboardPanel",
+    "onCommand:visualdebugger.showErrorPanel",
+    "onCommand:visualdebugger.showDiffPanel",
+    "onCommand:visualdebugger.showDashboard",
+    "onCommand:visualdebugger.setGeminiKey",
+    "onCommand:visualdebugger.setElevenLabsKey",
+    "onCommand:visualdebugger.setMongoUri",
+    "onCommand:visualdebugger.setElevenLabsKey",
+    "onCommand:visualdebugger.analyzeCurrentFile",
+    "onCommand:visualdebugger.explainCodeLensError",
+    "onCommand:visualdebugger.fixCodeLensError"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "flowfixer.showDebugPanel",
+        "command": "visualdebugger.showDebugPanel",
         "title": "Visual Debugger: Show Debug Panel"
       },
       {
-        "command": "flowfixer.showErrorPanel",
+        "command": "visualdebugger.showErrorPanel",
         "title": "Visual Debugger: Show Error Explanation"
       },
       {
-        "command": "flowfixer.showDiffPanel",
+        "command": "visualdebugger.showDiffPanel",
         "title": "Visual Debugger: Show Diff Review"
       },
       {
-        "command": "flowfixer.showDashboard",
+        "command": "visualdebugger.showDashboard",
         "title": "Visual Debugger: Show Bug Dashboard"
       },
       {
-        "command": "flowfixer.setGeminiKey",
+        "command": "visualdebugger.setGeminiKey",
         "title": "Visual Debugger: Set Gemini API Key"
       },
       {
-        "command": "flowfixer.testGeminiConnection",
+        "command": "visualdebugger.testGeminiConnection",
         "title": "Visual Debugger: Test Gemini Connection"
       },
       {
-        "command": "flowfixer.setElevenLabsKey",
+        "command": "visualdebugger.setElevenLabsKey",
         "title": "Visual Debugger: Set ElevenLabs API Key"
       },
       {
-        "command": "flowfixer.setMongoUri",
+        "command": "visualdebugger.setMongoUri",
         "title": "Visual Debugger: Set MongoDB Atlas URI"
       },
       {
-        "command": "flowfixer.setElevenLabsKey",
+        "command": "visualdebugger.setElevenLabsKey",
         "title": "Visual Debugger: Set ElevenLabs API Key"
       },
       {
-        "command": "flowfixer.analyzeCurrentFile",
+        "command": "visualdebugger.analyzeCurrentFile",
         "title": "Visual Debugger: Analyze Current File"
       },
       {
-        "command": "flowfixer.explainCodeLensError",
+        "command": "visualdebugger.explainCodeLensError",
         "title": "Visual Debugger: Explain Error (CodeLens)"
       },
       {
-        "command": "flowfixer.fixCodeLensError",
+        "command": "visualdebugger.fixCodeLensError",
         "title": "Visual Debugger: Fix Error (CodeLens)"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "flowfixer",
+          "id": "visualdebugger",
           "title": "Visual Debugger",
           "icon": "$(bug)"
         }
       ]
     },
     "views": {
-      "flowfixer": [
+      "visualdebugger": [
         {
           "type": "webview",
-          "id": "flowfixer.debugPanel",
+          "id": "visualdebugger.debugPanel",
           "name": "Debug"
         },
         {
           "type": "webview",
-          "id": "flowfixer.dashboardPanel",
+          "id": "visualdebugger.dashboardPanel",
           "name": "Bug Dashboard"
         }
       ]
@@ -132,3 +137,4 @@
     "prismjs": "^1.30.0"
   }
 }
+

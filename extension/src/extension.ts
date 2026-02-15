@@ -33,9 +33,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // --- .env support (checked before context.secrets) ---
   const envMap = loadEnv();
   const ENV_KEY_MAP: Record<string, string> = {
-    "flowfixer.geminiKey": "GEMINI_API_KEY",
-    "flowfixer.elevenLabsKey": "ELEVENLABS_API_KEY",
-    "flowfixer.mongoUri": "MONGODB_URI",
+    "visualdebugger.geminiKey": "GEMINI_API_KEY",
+    "visualdebugger.elevenLabsKey": "ELEVENLABS_API_KEY",
+    "visualdebugger.mongoUri": "MONGODB_URI",
   };
   const mergedSecrets = {
     async get(key: string): Promise<string | undefined> {
@@ -59,7 +59,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   }
 
   // --- Storage ---
-  const mongoUri = await mergedSecrets.get("flowfixer.mongoUri");
+  const mongoUri = await mergedSecrets.get("visualdebugger.mongoUri");
   const storage = new FlowFixerStorage(context.globalState, mongoUri);
 
   const debugPanel = new DebugPanelProvider(context.extensionUri);
@@ -125,7 +125,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   statusItem.name = "Visual Debugger";
-  statusItem.command = "flowfixer.showDashboard";
+  statusItem.command = "visualdebugger.showDashboard";
   context.subscriptions.push(statusItem);
 
   let resetStatusTimer: NodeJS.Timeout | undefined;
@@ -143,39 +143,39 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       case "ready":
         statusItem.text = "$(bug) Visual Debugger Ready";
         statusItem.tooltip = "Visual Debugger is active. Click to open Bug Dashboard.";
-        statusItem.command = "flowfixer.showDashboard";
+        statusItem.command = "visualdebugger.showDashboard";
         break;
       case "needsKey":
         statusItem.text = "$(key) Visual Debugger: Set Gemini Key";
         statusItem.tooltip = "Gemini API key is required for analysis. Click to configure.";
-        statusItem.command = "flowfixer.setGeminiKey";
+        statusItem.command = "visualdebugger.setGeminiKey";
         break;
       case "analyzingError":
         statusItem.text = "$(loading~spin) Visual Debugger: Analyzing error...";
         statusItem.tooltip = "Visual Debugger is analyzing the detected error.";
-        statusItem.command = "flowfixer.showDebugPanel";
+        statusItem.command = "visualdebugger.showDebugPanel";
         break;
       case "errorExplained":
         statusItem.text = "$(check) Visual Debugger: Error explained";
         statusItem.tooltip = "Error explanation ready. Click to open the panel.";
-        statusItem.command = "flowfixer.showDebugPanel";
+        statusItem.command = "visualdebugger.showDebugPanel";
         resetStatusTimer = setTimeout(() => updateStatus(isInitialized() ? "ready" : "needsKey"), 5000);
         break;
       case "analyzingDiff":
         statusItem.text = "$(loading~spin) Visual Debugger: Reviewing fix...";
         statusItem.tooltip = "Visual Debugger is analyzing the code diff.";
-        statusItem.command = "flowfixer.showDebugPanel";
+        statusItem.command = "visualdebugger.showDebugPanel";
         break;
       case "diffReviewed":
         statusItem.text = "$(git-compare) Visual Debugger: Fix reviewed";
         statusItem.tooltip = "Diff review ready. Click to open the panel.";
-        statusItem.command = "flowfixer.showDebugPanel";
+        statusItem.command = "visualdebugger.showDebugPanel";
         resetStatusTimer = setTimeout(() => updateStatus(isInitialized() ? "ready" : "needsKey"), 5000);
         break;
       case "analysisFailed":
         statusItem.text = "$(error) Visual Debugger: Analysis failed";
         statusItem.tooltip = "Analysis failed. Check API key and logs, then retry.";
-        statusItem.command = "flowfixer.showDashboard";
+        statusItem.command = "visualdebugger.showDashboard";
         resetStatusTimer = setTimeout(() => updateStatus(isInitialized() ? "ready" : "needsKey"), 5000);
         break;
     }
@@ -292,7 +292,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const text = message.text.trim();
         if (!text) return;
 
-        const elevenLabsKey = await mergedSecrets.get("flowfixer.elevenLabsKey");
+        const elevenLabsKey = await mergedSecrets.get("visualdebugger.elevenLabsKey");
         if (!elevenLabsKey) {
           target.postMessage({
             type: "ttsError",
@@ -434,31 +434,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("flowfixer.showDebugPanel", async () => {
-      await vscode.commands.executeCommand("flowfixer.debugPanel.focus");
+    vscode.commands.registerCommand("visualdebugger.showDebugPanel", async () => {
+      await vscode.commands.executeCommand("visualdebugger.debugPanel.focus");
     }),
-    vscode.commands.registerCommand("flowfixer.showErrorPanel", async () => {
-      await vscode.commands.executeCommand("flowfixer.debugPanel.focus");
+    vscode.commands.registerCommand("visualdebugger.showErrorPanel", async () => {
+      await vscode.commands.executeCommand("visualdebugger.debugPanel.focus");
     }),
-    vscode.commands.registerCommand("flowfixer.showDiffPanel", async () => {
-      await vscode.commands.executeCommand("flowfixer.debugPanel.focus");
+    vscode.commands.registerCommand("visualdebugger.showDiffPanel", async () => {
+      await vscode.commands.executeCommand("visualdebugger.debugPanel.focus");
     }),
-    vscode.commands.registerCommand("flowfixer.showDashboard", async () => {
-      await vscode.commands.executeCommand("flowfixer.dashboardPanel.focus");
+    vscode.commands.registerCommand("visualdebugger.showDashboard", async () => {
+      await vscode.commands.executeCommand("visualdebugger.dashboardPanel.focus");
       const bugs = await getBugsWithFallback();
       dashboardPanel.postMessage({
         type: "showDashboard",
         data: { bugs },
       });
     }),
-    vscode.commands.registerCommand("flowfixer.setGeminiKey", async () => {
+    vscode.commands.registerCommand("visualdebugger.setGeminiKey", async () => {
       const key = await vscode.window.showInputBox({
         prompt: "Enter your Gemini API key",
         password: true,
         ignoreFocusOut: true,
       });
       if (key) {
-        await context.secrets.store("flowfixer.geminiKey", key);
+        await context.secrets.store("visualdebugger.geminiKey", key);
         try {
           await initLLM(mergedSecrets);
           updateStatus("ready");
@@ -469,7 +469,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }
       }
     }),
-    vscode.commands.registerCommand("flowfixer.testGeminiConnection", async () => {
+    vscode.commands.registerCommand("visualdebugger.testGeminiConnection", async () => {
       try {
         if (!isInitialized()) {
           // Attempt to init if not already (e.g. if key was just added to .env)
@@ -486,19 +486,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         updateStatus("needsKey");
       }
     }),
-    vscode.commands.registerCommand("flowfixer.setElevenLabsKey", async () => {
+    vscode.commands.registerCommand("visualdebugger.setElevenLabsKey", async () => {
       const key = await vscode.window.showInputBox({
         prompt: "Enter your ElevenLabs API key",
         password: true,
         ignoreFocusOut: true,
       });
       if (key) {
-        await context.secrets.store("flowfixer.elevenLabsKey", key);
+        await context.secrets.store("visualdebugger.elevenLabsKey", key);
         vscode.window.showInformationMessage("Visual Debugger: ElevenLabs API key saved. Read Aloud is ready.");
       }
     }),
-    vscode.commands.registerCommand("flowfixer.setMongoUri", async () => {
-      const currentUri = await mergedSecrets.get("flowfixer.mongoUri");
+    vscode.commands.registerCommand("visualdebugger.setMongoUri", async () => {
+      const currentUri = await mergedSecrets.get("visualdebugger.mongoUri");
       const uriInput = await vscode.window.showInputBox({
         prompt: "Enter your MongoDB Atlas connection URI (leave empty to disable)",
         password: true,
@@ -513,13 +513,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const uri = uriInput.trim();
 
       if (!uri) {
-        await context.secrets.delete("flowfixer.mongoUri");
+        await context.secrets.delete("visualdebugger.mongoUri");
         storage.setMongoUri(undefined);
         vscode.window.showInformationMessage("Visual Debugger: MongoDB disabled. Using local fallback storage.");
         return;
       }
 
-      await context.secrets.store("flowfixer.mongoUri", uri);
+      await context.secrets.store("visualdebugger.mongoUri", uri);
       storage.setMongoUri(uri);
       const connected = await storage.testMongoConnection();
       if (connected) {
@@ -529,7 +529,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         vscode.window.showWarningMessage("Visual Debugger: URI saved, but connection failed. Using local fallback storage.");
       }
     }),
-    vscode.commands.registerCommand("flowfixer.analyzeCurrentFile", async () => {
+    vscode.commands.registerCommand("visualdebugger.analyzeCurrentFile", async () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
         vscode.window.showWarningMessage("Visual Debugger: No active editor.");
@@ -597,7 +597,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         await handlePhase1(captured, { trigger: "manual" });
       }
     }),
-    vscode.commands.registerCommand("flowfixer.explainCodeLensError", async (file: string, line: number, message: string) => {
+    vscode.commands.registerCommand("visualdebugger.explainCodeLensError", async (file: string, line: number, message: string) => {
       const doc = vscode.workspace.textDocuments.find((d) => d.uri.fsPath === file);
       const text = doc?.getText() ?? "";
       const lines = text.split("\n");
@@ -621,14 +621,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
       await handlePhase1(captured, { trigger: "manual" });
     }),
-    vscode.commands.registerCommand("flowfixer.fixCodeLensError", async (file: string, line: number, message: string) => {
+    vscode.commands.registerCommand("visualdebugger.fixCodeLensError", async (file: string, line: number, message: string) => {
       const action = await vscode.window.showInformationMessage(
         "Try fixing it yourself first! Use the error explanation to understand what went wrong, then apply the suggested fix.",
         "Show Explanation",
         "Open File"
       );
       if (action === "Show Explanation") {
-        await vscode.commands.executeCommand("flowfixer.explainCodeLensError", file, line, message);
+        await vscode.commands.executeCommand("visualdebugger.explainCodeLensError", file, line, message);
       } else if (action === "Open File") {
         const doc = await vscode.workspace.openTextDocument(file);
         await vscode.window.showTextDocument(doc, { selection: new vscode.Range(line - 1, 0, line - 1, 0) });

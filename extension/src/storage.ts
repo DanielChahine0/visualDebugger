@@ -3,7 +3,7 @@ import type { Collection, MongoClient } from "mongodb";
 import { BugRecord } from "./types";
 
 const LOG = "[FlowFixer:Storage]";
-const GLOBAL_STATE_KEY = "flowfixer.bugHistory";
+const GLOBAL_STATE_KEY = "visualdebugger.bugHistory";
 
 export interface StorageProvider {
   save(record: BugRecord): Promise<void>;
@@ -66,7 +66,7 @@ class MongoStorage implements StorageProvider {
         serverSelectionTimeoutMS: 4000,
       });
       await this.client.connect();
-      const db = this.client.db("flowfixer");
+      const db = this.client.db("visualdebugger");
       this.collection = db.collection<BugRecord>("bugs");
       await db.command({ ping: 1 });
       await this.collection.createIndex({ id: 1 }, { unique: true });

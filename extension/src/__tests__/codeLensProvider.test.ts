@@ -132,7 +132,7 @@ describe("FlowFixerCodeLensProvider", () => {
     const explainLens = lenses[0];
 
     expect(explainLens.command.title).toContain("Explain this error");
-    expect(explainLens.command.command).toBe("flowfixer.explainCodeLensError");
+    expect(explainLens.command.command).toBe("visualdebugger.explainCodeLensError");
     expect(explainLens.command.arguments).toEqual(["/src/app.ts", 11, "SyntaxError: Unexpected token"]);
   });
 
@@ -147,7 +147,7 @@ describe("FlowFixerCodeLensProvider", () => {
     const fixLens = lenses[1];
 
     expect(fixLens.command.title).toContain("Fix it for me");
-    expect(fixLens.command.command).toBe("flowfixer.fixCodeLensError");
+    expect(fixLens.command.command).toBe("visualdebugger.fixCodeLensError");
     expect(fixLens.command.arguments).toEqual(["/src/app.ts", 11, "SyntaxError: Unexpected token"]);
   });
 

@@ -5,7 +5,7 @@ import { ExtToWebviewMessage, WebviewToExtMessage } from "../types";
 const LOG = "[FlowFixer:DashboardPanel]";
 
 export class DashboardPanelProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = "flowfixer.dashboardPanel";
+  public static readonly viewType = "visualdebugger.dashboardPanel";
   private view?: vscode.WebviewView;
   private onMessageEmitter = new vscode.EventEmitter<WebviewToExtMessage>();
   readonly onMessage = this.onMessageEmitter.event;
@@ -41,9 +41,9 @@ export class DashboardPanelProvider implements vscode.WebviewViewProvider {
   }
 
   private getHtml(webview: vscode.Webview): string {
-    const htmlPath = vscode.Uri.joinPath(this.extensionUri, "src", "webview", "dashboard.html");
-    const stylesUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "src", "webview", "styles.css"));
-    const configUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "src", "webview", "config.js"));
+    const htmlPath = vscode.Uri.joinPath(this.extensionUri, "dist", "webview", "dashboard.html");
+    const stylesUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "dist", "webview", "styles.css"));
+    const configUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "dist", "webview", "config.js"));
     const nonce = getNonce();
 
     let html = "";

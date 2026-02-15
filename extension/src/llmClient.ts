@@ -44,7 +44,7 @@ let genai: GoogleGenAI | undefined;
 export async function initialize(
   secrets: { get(key: string): PromiseLike<string | undefined> | string | undefined }
 ): Promise<void> {
-  const apiKey = await secrets.get("flowfixer.geminiKey");
+  const apiKey = await secrets.get("visualdebugger.geminiKey");
   if (!apiKey) {
     throw new FlowFixerError("API key not found. Add GEMINI_API_KEY to .env or use 'Visual Debugger: Set Gemini API Key' command.");
   }

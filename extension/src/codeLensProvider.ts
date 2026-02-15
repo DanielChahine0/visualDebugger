@@ -43,13 +43,13 @@ export class FlowFixerCodeLensProvider implements vscode.CodeLensProvider {
       lenses.push(
         new vscode.CodeLens(range, {
           title: "$(lightbulb) Explain this error",
-          command: "flowfixer.explainCodeLensError",
+          command: "visualdebugger.explainCodeLensError",
           arguments: [document.uri.fsPath, diag.range.start.line + 1, diag.message],
           tooltip: "Get an ADHD-friendly explanation of this error",
         }),
         new vscode.CodeLens(range, {
           title: "$(wrench) Fix it for me",
-          command: "flowfixer.fixCodeLensError",
+          command: "visualdebugger.fixCodeLensError",
           arguments: [document.uri.fsPath, diag.range.start.line + 1, diag.message],
           tooltip: "Get step-by-step fix instructions",
         })

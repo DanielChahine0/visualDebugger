@@ -21,7 +21,7 @@ describeIntegration("Gemini Integration (Real API)", () => {
   beforeEach(async () => {
     console.log(`[IntegrationTest] Initializing with key length: ${REAL_API_KEY?.length ?? 0}`);
     // Re-initialize with real key for each test
-    await initialize({ get: (key) => (key === "flowfixer.geminiKey" ? REAL_API_KEY : undefined) });
+    await initialize({ get: (key) => (key === "visualdebugger.geminiKey" ? REAL_API_KEY : undefined) });
   });
 
   it("successfully initializes and connects to Gemini", () => {

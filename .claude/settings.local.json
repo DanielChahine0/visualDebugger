@@ -14,7 +14,8 @@
       "Bash(git add:*)",
       "Bash(git restore:*)",
       "Bash(git commit:*)",
-      "Bash(git rm:*)"
+      "Bash(node -e:*)",
+      "Bash(npm test)"
     ]
   }
 }
