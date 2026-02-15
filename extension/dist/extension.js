@@ -11834,7 +11834,7 @@ var require_util2 = __commonJS({
     exports2.removeUndefinedValuesInObject = removeUndefinedValuesInObject;
     exports2.isValidFile = isValidFile;
     exports2.getWellKnownCertificateConfigFileLocation = getWellKnownCertificateConfigFileLocation;
-    var fs7 = require("fs");
+    var fs8 = require("fs");
     var os = require("os");
     var path3 = require("path");
     var WELL_KNOWN_CERTIFICATE_CONFIG_FILE = "certificate_config.json";
@@ -11922,7 +11922,7 @@ var require_util2 = __commonJS({
     }
     async function isValidFile(filePath) {
       try {
-        const stats = await fs7.promises.lstat(filePath);
+        const stats = await fs8.promises.lstat(filePath);
         return stats.isFile();
       } catch (e2) {
         return false;
@@ -13781,7 +13781,7 @@ var require_src5 = __commonJS({
       value: true
     });
     exports2.GoogleToken = void 0;
-    var fs7 = _interopRequireWildcard(require("fs"));
+    var fs8 = _interopRequireWildcard(require("fs"));
     var _gaxios = require_src2();
     var jws = _interopRequireWildcard(require_jws());
     var path3 = _interopRequireWildcard(require("path"));
@@ -14024,7 +14024,7 @@ var require_src5 = __commonJS({
         });
       };
     }
-    var readFile = fs7.readFile ? (0, _util.promisify)(fs7.readFile) : /* @__PURE__ */ _asyncToGenerator(/* @__PURE__ */ _regenerator().m(function _callee() {
+    var readFile = fs8.readFile ? (0, _util.promisify)(fs8.readFile) : /* @__PURE__ */ _asyncToGenerator(/* @__PURE__ */ _regenerator().m(function _callee() {
       return _regenerator().w(function(_context) {
         while (1) switch (_context.n) {
           case 0:
@@ -15778,12 +15778,12 @@ var require_filesubjecttokensupplier = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.FileSubjectTokenSupplier = void 0;
     var util_1 = require("util");
-    var fs7 = require("fs");
-    var readFile = (0, util_1.promisify)(fs7.readFile ?? (() => {
+    var fs8 = require("fs");
+    var readFile = (0, util_1.promisify)(fs8.readFile ?? (() => {
     }));
-    var realpath = (0, util_1.promisify)(fs7.realpath ?? (() => {
+    var realpath = (0, util_1.promisify)(fs8.realpath ?? (() => {
     }));
-    var lstat = (0, util_1.promisify)(fs7.lstat ?? (() => {
+    var lstat = (0, util_1.promisify)(fs8.lstat ?? (() => {
     }));
     var FileSubjectTokenSupplier = class {
       filePath;
@@ -15900,7 +15900,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.CertificateSubjectTokenSupplier = exports2.InvalidConfigurationError = exports2.CertificateSourceUnavailableError = exports2.CERTIFICATE_CONFIGURATION_ENV_VARIABLE = void 0;
     var util_1 = require_util2();
-    var fs7 = require("fs");
+    var fs8 = require("fs");
     var crypto_1 = require("crypto");
     var https2 = require("https");
     exports2.CERTIFICATE_CONFIGURATION_ENV_VARIABLE = "GOOGLE_API_CERTIFICATE_CONFIG";
@@ -15994,7 +15994,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
         const configPath = this.certificateConfigPath;
         let fileContents;
         try {
-          fileContents = await fs7.promises.readFile(configPath, "utf8");
+          fileContents = await fs8.promises.readFile(configPath, "utf8");
         } catch (err) {
           throw new CertificateSourceUnavailableError(`Failed to read certificate config file at: ${configPath}`);
         }
@@ -16019,14 +16019,14 @@ var require_certificatesubjecttokensupplier = __commonJS({
       async #getKeyAndCert(certPath, keyPath) {
         let cert, key;
         try {
-          cert = await fs7.promises.readFile(certPath);
+          cert = await fs8.promises.readFile(certPath);
           new crypto_1.X509Certificate(cert);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           throw new CertificateSourceUnavailableError(`Failed to read certificate file at ${certPath}: ${message}`);
         }
         try {
-          key = await fs7.promises.readFile(keyPath);
+          key = await fs8.promises.readFile(keyPath);
           (0, crypto_1.createPrivateKey)(key);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
@@ -16045,7 +16045,7 @@ var require_certificatesubjecttokensupplier = __commonJS({
           return JSON.stringify([leafCert.raw.toString("base64")]);
         }
         try {
-          const chainPems = await fs7.promises.readFile(this.trustChainPath, "utf8");
+          const chainPems = await fs8.promises.readFile(this.trustChainPath, "utf8");
           const pemBlocks = chainPems.match(/-----BEGIN CERTIFICATE-----[^-]+-----END CERTIFICATE-----/g) ?? [];
           const chainCerts = pemBlocks.map((pem, index) => {
             try {
@@ -16743,7 +16743,7 @@ var require_pluggable_auth_handler = __commonJS({
     exports2.PluggableAuthHandler = exports2.ExecutableError = void 0;
     var executable_response_1 = require_executable_response();
     var childProcess = require("child_process");
-    var fs7 = require("fs");
+    var fs8 = require("fs");
     var ExecutableError = class extends Error {
       /**
        * The exit code returned by the executable.
@@ -16828,14 +16828,14 @@ var require_pluggable_auth_handler = __commonJS({
         }
         let filePath;
         try {
-          filePath = await fs7.promises.realpath(this.outputFile);
+          filePath = await fs8.promises.realpath(this.outputFile);
         } catch {
           return void 0;
         }
-        if (!(await fs7.promises.lstat(filePath)).isFile()) {
+        if (!(await fs8.promises.lstat(filePath)).isFile()) {
           return void 0;
         }
-        const responseString = await fs7.promises.readFile(filePath, {
+        const responseString = await fs8.promises.readFile(filePath, {
           encoding: "utf8"
         });
         if (responseString === "") {
@@ -17245,7 +17245,7 @@ var require_googleauth = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.GoogleAuth = exports2.GoogleAuthExceptionMessages = void 0;
     var child_process_1 = require("child_process");
-    var fs7 = require("fs");
+    var fs8 = require("fs");
     var gaxios_1 = require_src2();
     var gcpMetadata = require_src4();
     var os = require("os");
@@ -17540,7 +17540,7 @@ var require_googleauth = __commonJS({
         }
         if (location) {
           location = path3.join(location, "gcloud", "application_default_credentials.json");
-          if (!fs7.existsSync(location)) {
+          if (!fs8.existsSync(location)) {
             location = null;
           }
         }
@@ -17561,8 +17561,8 @@ var require_googleauth = __commonJS({
           throw new Error("The file path is invalid.");
         }
         try {
-          filePath = fs7.realpathSync(filePath);
-          if (!fs7.lstatSync(filePath).isFile()) {
+          filePath = fs8.realpathSync(filePath);
+          if (!fs8.lstatSync(filePath).isFile()) {
             throw new Error();
           }
         } catch (err) {
@@ -17571,7 +17571,7 @@ var require_googleauth = __commonJS({
           }
           throw err;
         }
-        const readStream = fs7.createReadStream(filePath);
+        const readStream = fs8.createReadStream(filePath);
         return this.fromStream(readStream, options);
       }
       /**
@@ -17884,7 +17884,7 @@ var require_googleauth = __commonJS({
           return this._cacheClientFromJSON(this.jsonContent, this.clientOptions);
         } else if (this.keyFilename) {
           const filePath = path3.resolve(this.keyFilename);
-          const stream = fs7.createReadStream(filePath);
+          const stream = fs8.createReadStream(filePath);
           return await this.fromStreamAsync(stream, this.clientOptions);
         } else if (this.apiKey) {
           const client = await this.fromAPIKey(this.apiKey, this.clientOptions);
@@ -20604,7 +20604,7 @@ var require_extension = __commonJS({
 var require_websocket = __commonJS({
   "node_modules/ws/lib/websocket.js"(exports2, module2) {
     "use strict";
-    var EventEmitter6 = require("events");
+    var EventEmitter8 = require("events");
     var https2 = require("https");
     var http3 = require("http");
     var net = require("net");
@@ -20636,7 +20636,7 @@ var require_websocket = __commonJS({
     var protocolVersions = [8, 13];
     var readyStates = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
     var subprotocolRegex = /^[!#$%&'*+\-.0-9A-Z^_`|a-z~]+$/;
-    var WebSocket2 = class _WebSocket extends EventEmitter6 {
+    var WebSocket2 = class _WebSocket extends EventEmitter8 {
       /**
        * Create a new `WebSocket`.
        *
@@ -21633,7 +21633,7 @@ var require_subprotocol = __commonJS({
 var require_websocket_server = __commonJS({
   "node_modules/ws/lib/websocket-server.js"(exports2, module2) {
     "use strict";
-    var EventEmitter6 = require("events");
+    var EventEmitter8 = require("events");
     var http3 = require("http");
     var { Duplex } = require("stream");
     var { createHash } = require("crypto");
@@ -21646,7 +21646,7 @@ var require_websocket_server = __commonJS({
     var RUNNING = 0;
     var CLOSING = 1;
     var CLOSED = 2;
-    var WebSocketServer2 = class extends EventEmitter6 {
+    var WebSocketServer2 = class extends EventEmitter8 {
       /**
        * Create a `WebSocketServer` instance.
        *
@@ -38471,7 +38471,7 @@ var require_state_machine = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.StateMachine = void 0;
-    var fs7 = require("fs/promises");
+    var fs8 = require("fs/promises");
     var net = require("net");
     var tls = require("tls");
     var bson_1 = require_bson2();
@@ -38758,11 +38758,11 @@ var require_state_machine = __commonJS({
           options.secureContext = tlsOptions.secureContext;
         }
         if (tlsOptions.tlsCertificateKeyFile) {
-          const cert = await fs7.readFile(tlsOptions.tlsCertificateKeyFile);
+          const cert = await fs8.readFile(tlsOptions.tlsCertificateKeyFile);
           options.cert = options.key = cert;
         }
         if (tlsOptions.tlsCAFile) {
-          options.ca = await fs7.readFile(tlsOptions.tlsCAFile);
+          options.ca = await fs8.readFile(tlsOptions.tlsCAFile);
         }
         if (tlsOptions.tlsCertificateKeyFilePassword) {
           options.passphrase = tlsOptions.tlsCertificateKeyFilePassword;
@@ -46685,7 +46685,7 @@ var require_token_machine_workflow = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.callback = void 0;
-    var fs7 = require("fs");
+    var fs8 = require("fs");
     var error_1 = require_error();
     var TOKEN_MISSING_ERROR = "OIDC_TOKEN_FILE must be set in the environment.";
     var callback = async () => {
@@ -46693,7 +46693,7 @@ var require_token_machine_workflow = __commonJS({
       if (!tokenFile) {
         throw new error_1.MongoAWSError(TOKEN_MISSING_ERROR);
       }
-      const token = await fs7.promises.readFile(tokenFile, "utf8");
+      const token = await fs8.promises.readFile(tokenFile, "utf8");
       return { accessToken: token };
     };
     exports2.callback = callback;
@@ -53977,7 +53977,7 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
-var vscode7 = __toESM(require("vscode"));
+var vscode9 = __toESM(require("vscode"));
 
 // src/errorListener.ts
 var vscode = __toESM(require("vscode"));
@@ -72066,6 +72066,7 @@ var PHASE1_SCHEMA = {
     howToPrevent: { type: Type.STRING },
     bestPractices: { type: Type.STRING },
     keyTerms: { type: Type.ARRAY, items: { type: Type.STRING } },
+    suggestedPrompt: { type: Type.STRING },
     quiz: {
       type: Type.OBJECT,
       properties: {
@@ -72086,6 +72087,7 @@ var PHASE1_SCHEMA = {
     "howToPrevent",
     "bestPractices",
     "keyTerms",
+    "suggestedPrompt",
     "quiz"
   ]
 };
@@ -72133,6 +72135,13 @@ Respond with a JSON object containing:
 
 - "keyTerms": 1-3 key words or short phrases from the error to highlight.
 
+- "suggestedPrompt": Generate a detailed, well-crafted debugging prompt that the student SHOULD have written instead of "fix the bug". This prompt teaches students what a good debugging prompt looks like. Format it as a ready-to-copy prompt with:
+  1. A clear one-line description of the error with file and line reference
+  2. A "Context:" section listing 2-3 bullet points about what the code does and why the error occurs
+  3. A "What to fix:" section with 1-2 specific actionable bullet points
+  4. An "Explain:" section with 2-3 bullet points asking for understanding (why, what, how to verify)
+  Use newlines for readability. Do NOT use markdown headers \u2014 use plain text labels followed by colons. Keep total length under 200 words.
+
 - "quiz": A multiple-choice question (4 options, one correct) testing whether the student understands WHY the error happened \u2014 not just what to do. The wrong options should be plausible but clearly wrong if you understood the explanation. Include a brief explanation of why the correct answer is right.
 
 ## Example 1: Syntax Error
@@ -72160,6 +72169,7 @@ Output:
   "howToPrevent": "When you type an opening bracket or parenthesis, immediately type the closing one, then fill in the middle.",
   "bestPractices": "Use an editor with bracket matching enabled. Most editors highlight unmatched brackets in red.",
   "keyTerms": ["Unexpected token", "expected ','", "closing parenthesis"],
+  "suggestedPrompt": "Fix the SyntaxError in BrokenSyntax.tsx at line 17 where the return statement is missing a closing parenthesis.\\n\\nContext:\\n- The return( on line 12 opens a parenthesis for multi-line JSX\\n- The JSX block closes with </div> on line 16 but no ) follows\\n- The parser hits } on line 18 and expects ) first\\n\\nWhat to fix:\\n- Add a closing ) after the </div> on line 16 to match the ( on line 12\\n\\nExplain:\\n- Why the parser reports 'expected ,' instead of 'expected )'\\n- How bracket matching works in multi-line return statements\\n- How to verify all parentheses are balanced after fixing",
   "quiz": {
     "question": "What is the root cause of this SyntaxError?",
     "options": [
@@ -72196,6 +72206,7 @@ Output:
   "howToPrevent": "Remember: array indices go from 0 to length - 1. Always use '< length' (not '<= length') when looping through arrays.",
   "bestPractices": "Prefer .map() or for...of loops over manual index loops. They handle bounds automatically and eliminate off-by-one bugs.",
   "keyTerms": ["off-by-one", "<= items.length", "undefined item"],
+  "suggestedPrompt": "Fix the off-by-one bug in BrokenLogic.tsx at line 10 where the loop renders an extra undefined item.\\n\\nContext:\\n- items is a 3-element array with indices 0, 1, 2\\n- The for loop uses i <= items.length which iterates when i is 3\\n- items[3] is undefined, causing an extra empty <li> to render\\n\\nWhat to fix:\\n- Change the loop condition from i <= items.length to i < items.length\\n\\nExplain:\\n- Why arrays with N elements have valid indices 0 to N-1\\n- What happens when you access an index beyond the array bounds\\n- How to verify the fix by checking the rendered list count",
   "quiz": {
     "question": "Why does the loop render an extra undefined item?",
     "options": [
@@ -72234,6 +72245,7 @@ Output:
   "howToPrevent": "Always give useState a default value that matches how you use the variable. If you call .map(), initialize with [].",
   "bestPractices": "Use optional chaining (data?.map()) or nullish coalescing ((data ?? []).map()) to guard against undefined values in async data flows.",
   "keyTerms": ["Cannot read properties", "undefined", "map"],
+  "suggestedPrompt": "Fix the TypeError in BrokenRuntime.tsx at line 10 where data.map() fails because useState() has no initial value.\\n\\nContext:\\n- data is used with .map() to render a list of items\\n- useState() returns undefined by default when no argument is passed\\n- .map() is an array method \u2014 it throws when called on undefined\\n\\nWhat to fix:\\n- Add [] as the initial value: useState([])\\n- Add a guard check before calling .map() to handle loading states\\n\\nExplain:\\n- Why undefined causes this specific TypeError\\n- What initial values prevent this class of bug\\n- How to verify the fix works after applying it",
   "quiz": {
     "question": "Why does calling .map() on 'data' throw a TypeError?",
     "options": [
@@ -72709,6 +72721,68 @@ function getNonce3() {
   return text;
 }
 
+// src/panels/ActionsPanel.ts
+var vscode6 = __toESM(require("vscode"));
+var fs6 = __toESM(require("fs"));
+var LOG8 = "[FlowFixer:ActionsPanel]";
+var ActionsPanelProvider = class {
+  constructor(extensionUri) {
+    this.extensionUri = extensionUri;
+  }
+  static viewType = "flowfixer.actionsPanel";
+  view;
+  onMessageEmitter = new vscode6.EventEmitter();
+  onMessage = this.onMessageEmitter.event;
+  pendingMessage;
+  resolveWebviewView(webviewView, _context, _token) {
+    this.view = webviewView;
+    webviewView.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [this.extensionUri]
+    };
+    webviewView.webview.html = this.getHtml(webviewView.webview);
+    webviewView.webview.onDidReceiveMessage((msg) => {
+      if (msg.type === "ready" && this.pendingMessage) {
+        webviewView.webview.postMessage(this.pendingMessage);
+        console.log(`${LOG8} replayed pending message`);
+      }
+      this.onMessageEmitter.fire(msg);
+    });
+    console.log(`${LOG8} view resolved`);
+  }
+  postMessage(message) {
+    this.pendingMessage = message;
+    if (this.view) {
+      this.view.webview.postMessage(message);
+    }
+  }
+  getHtml(webview) {
+    const htmlPath = vscode6.Uri.joinPath(this.extensionUri, "src", "webview", "actions.html");
+    const stylesUri = webview.asWebviewUri(vscode6.Uri.joinPath(this.extensionUri, "src", "webview", "styles.css"));
+    const nonce = getNonce4();
+    let html = "";
+    try {
+      html = fs6.readFileSync(htmlPath.fsPath, "utf8");
+    } catch (e2) {
+      console.error(`${LOG8} Failed to read actions.html`, e2);
+      return `<div>Error loading resource: ${e2}</div>`;
+    }
+    html = html.replace('href="styles.css"', `href="${stylesUri}"`);
+    html = html.replace(/<script/g, `<script nonce="${nonce}"`);
+    const csp = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">`;
+    html = html.replace("<head>", `<head>${csp}`);
+    return html;
+  }
+};
+function getNonce4() {
+  let text = "";
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for (let i2 = 0; i2 < 32; i2++) {
+    text += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return text;
+}
+
 // src/seedData.ts
 var SEED_BUGS = [
   { id: 1, category: "Runtime", error: "TypeError: Cannot read properties of undefined (reading 'map')", file: "App.tsx", line: 15, timestamp: "2026-02-07T09:15:00Z" },
@@ -72747,7 +72821,8 @@ function getSeedBugRecords() {
       howToFix: "",
       howToPrevent: "",
       bestPractices: "",
-      keyTerms: []
+      keyTerms: [],
+      suggestedPrompt: ""
     };
     return {
       id: `seed_${entry.id}`,
@@ -72761,14 +72836,14 @@ function getSeedBugRecords() {
 }
 
 // src/envLoader.ts
-var fs6 = __toESM(require("fs"));
+var fs7 = __toESM(require("fs"));
 var path2 = __toESM(require("path"));
-var vscode6 = __toESM(require("vscode"));
+var vscode7 = __toESM(require("vscode"));
 function loadEnv() {
   const env = /* @__PURE__ */ new Map();
   const extensionEnvPath = path2.join(__dirname, "..", ".env");
   loadIntoMap(extensionEnvPath, env);
-  const folders = vscode6.workspace.workspaceFolders;
+  const folders = vscode7.workspace.workspaceFolders;
   if (folders && folders.length > 0) {
     const wsPath = folders[0].uri.fsPath;
     const parentEnvPath = path2.join(wsPath, "..", ".env");
@@ -72780,10 +72855,10 @@ function loadEnv() {
 }
 function loadIntoMap(filePath, map) {
   try {
-    if (!fs6.existsSync(filePath)) {
+    if (!fs7.existsSync(filePath)) {
       return;
     }
-    const content = fs6.readFileSync(filePath, "utf-8");
+    const content = fs7.readFileSync(filePath, "utf-8");
     for (const raw of content.split(/\r?\n/)) {
       const line = raw.trim();
       if (!line || line.startsWith("#")) {
@@ -72835,11 +72910,69 @@ async function fetchTtsAudio(text, apiKey) {
   return Buffer.from(arrayBuffer).toString("base64");
 }
 
+// src/codeLensProvider.ts
+var vscode8 = __toESM(require("vscode"));
+var LOG9 = "[FlowFixer:CodeLens]";
+var SUPPORTED_LANGUAGES2 = [
+  "javascript",
+  "typescript",
+  "javascriptreact",
+  "typescriptreact"
+];
+var FlowFixerCodeLensProvider = class {
+  _onDidChangeCodeLenses = new vscode8.EventEmitter();
+  onDidChangeCodeLenses = this._onDidChangeCodeLenses.event;
+  disposable;
+  constructor() {
+    this.disposable = vscode8.languages.onDidChangeDiagnostics(() => {
+      this._onDidChangeCodeLenses.fire();
+    });
+    console.log(`${LOG9} initialized`);
+  }
+  provideCodeLenses(document2) {
+    if (!SUPPORTED_LANGUAGES2.includes(document2.languageId)) {
+      return [];
+    }
+    const diagnostics = vscode8.languages.getDiagnostics(document2.uri);
+    const errors = diagnostics.filter(
+      (d) => d.severity === vscode8.DiagnosticSeverity.Error
+    );
+    const lenses = [];
+    for (const diag of errors) {
+      const range = new vscode8.Range(
+        diag.range.start.line,
+        0,
+        diag.range.start.line,
+        0
+      );
+      lenses.push(
+        new vscode8.CodeLens(range, {
+          title: "$(lightbulb) Explain this error",
+          command: "flowfixer.explainCodeLensError",
+          arguments: [document2.uri.fsPath, diag.range.start.line + 1, diag.message],
+          tooltip: "Get an ADHD-friendly explanation of this error"
+        }),
+        new vscode8.CodeLens(range, {
+          title: "$(wrench) Fix it for me",
+          command: "flowfixer.fixCodeLensError",
+          arguments: [document2.uri.fsPath, diag.range.start.line + 1, diag.message],
+          tooltip: "Get step-by-step fix instructions"
+        })
+      );
+    }
+    return lenses;
+  }
+  dispose() {
+    this.disposable.dispose();
+    this._onDidChangeCodeLenses.dispose();
+  }
+};
+
 // src/extension.ts
-var LOG8 = "[FlowFixer]";
+var LOG10 = "[FlowFixer]";
 var TTS_MIME_TYPE = "audio/mpeg";
 async function activate(context) {
-  console.log(`${LOG8} activating...`);
+  console.log(`${LOG10} activating...`);
   const envMap = loadEnv();
   const ENV_KEY_MAP = {
     "flowfixer.geminiKey": "GEMINI_API_KEY",
@@ -72863,23 +72996,64 @@ async function activate(context) {
   try {
     await initialize(mergedSecrets);
   } catch {
-    console.warn(`${LOG8} LLM not initialized \u2014 set API key with 'Visual Debugger: Set Gemini API Key' or add GEMINI_API_KEY to .env`);
+    console.warn(`${LOG10} LLM not initialized \u2014 set API key with 'Visual Debugger: Set Gemini API Key' or add GEMINI_API_KEY to .env`);
   }
   const mongoUri = await mergedSecrets.get("flowfixer.mongoUri");
   const storage = new FlowFixerStorage(context.globalState, mongoUri);
+  const actionsPanel = new ActionsPanelProvider(context.extensionUri);
   const errorPanel = new ErrorPanelProvider(context.extensionUri);
   const diffPanel = new DiffPanelProvider(context.extensionUri);
   const dashboardPanel = new DashboardPanelProvider(context.extensionUri);
   context.subscriptions.push(
-    vscode7.window.registerWebviewViewProvider(ErrorPanelProvider.viewType, errorPanel),
-    vscode7.window.registerWebviewViewProvider(DiffPanelProvider.viewType, diffPanel),
-    vscode7.window.registerWebviewViewProvider(DashboardPanelProvider.viewType, dashboardPanel)
+    vscode9.window.registerWebviewViewProvider(ActionsPanelProvider.viewType, actionsPanel),
+    vscode9.window.registerWebviewViewProvider(ErrorPanelProvider.viewType, errorPanel),
+    vscode9.window.registerWebviewViewProvider(DiffPanelProvider.viewType, diffPanel),
+    vscode9.window.registerWebviewViewProvider(DashboardPanelProvider.viewType, dashboardPanel)
   );
+  const codeLensProvider = new FlowFixerCodeLensProvider();
+  const codeLensSelector = SUPPORTED_LANGUAGES2.map((lang) => ({ language: lang }));
+  context.subscriptions.push(
+    vscode9.languages.registerCodeLensProvider(codeLensSelector, codeLensProvider),
+    codeLensProvider
+  );
+  function updateActionsPanel() {
+    const editor = vscode9.window.activeTextEditor;
+    if (!editor) {
+      actionsPanel.postMessage({ type: "updateErrors", data: { count: 0, fileName: "", firstError: null } });
+      return;
+    }
+    const doc = editor.document;
+    const diagnostics = vscode9.languages.getDiagnostics(doc.uri);
+    const errors = diagnostics.filter((d) => d.severity === vscode9.DiagnosticSeverity.Error);
+    const fileName = doc.uri.fsPath.split(/[\\/]/).pop() ?? doc.uri.fsPath;
+    if (errors.length > 0) {
+      const first = errors[0];
+      actionsPanel.postMessage({
+        type: "updateErrors",
+        data: {
+          count: errors.length,
+          fileName,
+          firstError: {
+            file: doc.uri.fsPath,
+            line: first.range.start.line + 1,
+            message: first.message
+          }
+        }
+      });
+    } else {
+      actionsPanel.postMessage({ type: "updateErrors", data: { count: 0, fileName, firstError: null } });
+    }
+  }
+  context.subscriptions.push(
+    vscode9.languages.onDidChangeDiagnostics(() => updateActionsPanel()),
+    vscode9.window.onDidChangeActiveTextEditor(() => updateActionsPanel())
+  );
+  setTimeout(updateActionsPanel, 300);
   async function getBugsWithFallback() {
     const stored = await storage.getAll();
     return stored.length > 0 ? stored : getSeedBugRecords();
   }
-  const statusItem = vscode7.window.createStatusBarItem(vscode7.StatusBarAlignment.Left, 100);
+  const statusItem = vscode9.window.createStatusBarItem(vscode9.StatusBarAlignment.Left, 100);
   statusItem.name = "Visual Debugger";
   statusItem.command = "flowfixer.showDashboard";
   context.subscriptions.push(statusItem);
@@ -72943,7 +73117,7 @@ async function activate(context) {
   let lastError;
   let lastBugId;
   async function handlePhase1(error) {
-    console.log(`${LOG8} Phase 1: error detected - ${error.message}`);
+    console.log(`${LOG10} Phase 1: error detected - ${error.message}`);
     lastError = error;
     diffPanel.postMessage({ type: "clear" });
     diffEngine.startTracking(error.file);
@@ -72979,20 +73153,20 @@ async function activate(context) {
       });
       updateStatus("errorExplained");
     } catch (err) {
-      console.error(`${LOG8} Phase 1 failed:`, err);
+      console.error(`${LOG10} Phase 1 failed:`, err);
       updateStatus("analysisFailed");
       if (err instanceof FlowFixerError) {
-        vscode7.window.showWarningMessage(`Visual Debugger: ${err.message}`);
+        vscode9.window.showWarningMessage(`Visual Debugger: ${err.message}`);
       }
     }
   }
   async function handleWebviewMessage(source, target, message) {
     switch (message.type) {
       case "ready":
-        console.log(`${LOG8} ${source} panel ready`);
+        console.log(`${LOG10} ${source} panel ready`);
         return;
       case "quizAnswer":
-        console.log(`${LOG8} quiz answered from ${source} panel: ${message.answer}`);
+        console.log(`${LOG10} quiz answered from ${source} panel: ${message.answer}`);
         return;
       case "requestTts": {
         const text = message.text.trim();
@@ -73012,7 +73186,7 @@ async function activate(context) {
             data: { base64Audio, mimeType: TTS_MIME_TYPE }
           });
         } catch (err) {
-          console.error(`${LOG8} TTS request failed:`, err);
+          console.error(`${LOG10} TTS request failed:`, err);
           target.postMessage({
             type: "ttsError",
             data: { message: "TTS request failed. Using browser voice fallback." }
@@ -73023,6 +73197,35 @@ async function activate(context) {
     }
   }
   context.subscriptions.push(
+    actionsPanel.onMessage((msg) => {
+      if (msg.type === "explainError") {
+        const editor = vscode9.window.activeTextEditor;
+        if (!editor) return;
+        const doc = editor.document;
+        const diagnostics = vscode9.languages.getDiagnostics(doc.uri);
+        const errors = diagnostics.filter((d) => d.severity === vscode9.DiagnosticSeverity.Error);
+        if (errors.length === 0) return;
+        const first = errors[0];
+        const line = first.range.start.line + 1;
+        const lines = doc.getText().split("\n");
+        const start = Math.max(0, line - 11);
+        const end = Math.min(lines.length, line + 10);
+        const codeContext = lines.slice(start, end).map((l, i2) => `${start + i2 + 1} | ${l}`).join("\n");
+        const captured = {
+          message: first.message,
+          file: doc.uri.fsPath,
+          line,
+          language: doc.languageId,
+          codeContext,
+          severity: "error",
+          source: "diagnostics",
+          timestamp: Date.now()
+        };
+        void handlePhase1(captured);
+      } else {
+        void handleWebviewMessage("error", actionsPanel, msg);
+      }
+    }),
     errorPanel.onMessage((msg) => {
       void handleWebviewMessage("error", errorPanel, msg);
     }),
@@ -73035,7 +73238,7 @@ async function activate(context) {
   );
   errorListener.onErrorDetected((error) => handlePhase1(error));
   diffEngine.onDiffDetected(async (diff2) => {
-    console.log(`${LOG8} Phase 2: diff detected in ${diff2.file}`);
+    console.log(`${LOG10} Phase 2: diff detected in ${diff2.file}`);
     updateStatus("analyzingDiff");
     try {
       if (!isInitialized()) {
@@ -73069,30 +73272,30 @@ async function activate(context) {
       });
       updateStatus("diffReviewed");
     } catch (err) {
-      console.error(`${LOG8} Phase 2 failed:`, err);
+      console.error(`${LOG10} Phase 2 failed:`, err);
       updateStatus("analysisFailed");
       if (err instanceof FlowFixerError) {
-        vscode7.window.showWarningMessage(`Visual Debugger: ${err.message}`);
+        vscode9.window.showWarningMessage(`Visual Debugger: ${err.message}`);
       }
     }
   });
   context.subscriptions.push(
-    vscode7.commands.registerCommand("flowfixer.showErrorPanel", async () => {
-      await vscode7.commands.executeCommand("flowfixer.errorPanel.focus");
+    vscode9.commands.registerCommand("flowfixer.showErrorPanel", async () => {
+      await vscode9.commands.executeCommand("flowfixer.errorPanel.focus");
     }),
-    vscode7.commands.registerCommand("flowfixer.showDiffPanel", async () => {
-      await vscode7.commands.executeCommand("flowfixer.diffPanel.focus");
+    vscode9.commands.registerCommand("flowfixer.showDiffPanel", async () => {
+      await vscode9.commands.executeCommand("flowfixer.diffPanel.focus");
     }),
-    vscode7.commands.registerCommand("flowfixer.showDashboard", async () => {
-      await vscode7.commands.executeCommand("flowfixer.dashboardPanel.focus");
+    vscode9.commands.registerCommand("flowfixer.showDashboard", async () => {
+      await vscode9.commands.executeCommand("flowfixer.dashboardPanel.focus");
       const bugs = await getBugsWithFallback();
       dashboardPanel.postMessage({
         type: "showDashboard",
         data: { bugs }
       });
     }),
-    vscode7.commands.registerCommand("flowfixer.setGeminiKey", async () => {
-      const key = await vscode7.window.showInputBox({
+    vscode9.commands.registerCommand("flowfixer.setGeminiKey", async () => {
+      const key = await vscode9.window.showInputBox({
         prompt: "Enter your Gemini API key",
         password: true,
         ignoreFocusOut: true
@@ -73102,42 +73305,42 @@ async function activate(context) {
         try {
           await initialize(mergedSecrets);
           updateStatus("ready");
-          vscode7.window.showInformationMessage("Visual Debugger: Gemini API key saved and connected.");
+          vscode9.window.showInformationMessage("Visual Debugger: Gemini API key saved and connected.");
         } catch {
           updateStatus("needsKey");
-          vscode7.window.showWarningMessage("Visual Debugger: Key saved but initialization failed. Check the key.");
+          vscode9.window.showWarningMessage("Visual Debugger: Key saved but initialization failed. Check the key.");
         }
       }
     }),
-    vscode7.commands.registerCommand("flowfixer.testGeminiConnection", async () => {
+    vscode9.commands.registerCommand("flowfixer.testGeminiConnection", async () => {
       try {
         if (!isInitialized()) {
           await initialize(mergedSecrets);
         }
-        vscode7.window.showInformationMessage("Visual Debugger: Testing Gemini connection...");
+        vscode9.window.showInformationMessage("Visual Debugger: Testing Gemini connection...");
         const response = await testConnection();
-        vscode7.window.showInformationMessage(`Visual Debugger: Connection Successful! Gemini replied: "${response}"`);
+        vscode9.window.showInformationMessage(`Visual Debugger: Connection Successful! Gemini replied: "${response}"`);
         updateStatus("ready");
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        vscode7.window.showErrorMessage(`Visual Debugger: Connection Failed. ${msg}`);
+        vscode9.window.showErrorMessage(`Visual Debugger: Connection Failed. ${msg}`);
         updateStatus("needsKey");
       }
     }),
-    vscode7.commands.registerCommand("flowfixer.setElevenLabsKey", async () => {
-      const key = await vscode7.window.showInputBox({
+    vscode9.commands.registerCommand("flowfixer.setElevenLabsKey", async () => {
+      const key = await vscode9.window.showInputBox({
         prompt: "Enter your ElevenLabs API key",
         password: true,
         ignoreFocusOut: true
       });
       if (key) {
         await context.secrets.store("flowfixer.elevenLabsKey", key);
-        vscode7.window.showInformationMessage("Visual Debugger: ElevenLabs API key saved. Read Aloud is ready.");
+        vscode9.window.showInformationMessage("Visual Debugger: ElevenLabs API key saved. Read Aloud is ready.");
       }
     }),
-    vscode7.commands.registerCommand("flowfixer.setMongoUri", async () => {
+    vscode9.commands.registerCommand("flowfixer.setMongoUri", async () => {
       const currentUri = await mergedSecrets.get("flowfixer.mongoUri");
-      const uriInput = await vscode7.window.showInputBox({
+      const uriInput = await vscode9.window.showInputBox({
         prompt: "Enter your MongoDB Atlas connection URI (leave empty to disable)",
         password: true,
         value: currentUri ?? "",
@@ -73150,7 +73353,7 @@ async function activate(context) {
       if (!uri) {
         await context.secrets.delete("flowfixer.mongoUri");
         storage.setMongoUri(void 0);
-        vscode7.window.showInformationMessage("Visual Debugger: MongoDB disabled. Using local fallback storage.");
+        vscode9.window.showInformationMessage("Visual Debugger: MongoDB disabled. Using local fallback storage.");
         return;
       }
       await context.secrets.store("flowfixer.mongoUri", uri);
@@ -73158,21 +73361,21 @@ async function activate(context) {
       const connected = await storage.testMongoConnection();
       if (connected) {
         const synced = await storage.syncLocalToMongo();
-        vscode7.window.showInformationMessage(`Visual Debugger: MongoDB URI saved and connected. Synced ${synced} local record(s).`);
+        vscode9.window.showInformationMessage(`Visual Debugger: MongoDB URI saved and connected. Synced ${synced} local record(s).`);
       } else {
-        vscode7.window.showWarningMessage("Visual Debugger: URI saved, but connection failed. Using local fallback storage.");
+        vscode9.window.showWarningMessage("Visual Debugger: URI saved, but connection failed. Using local fallback storage.");
       }
     }),
-    vscode7.commands.registerCommand("flowfixer.analyzeCurrentFile", async () => {
-      const editor = vscode7.window.activeTextEditor;
+    vscode9.commands.registerCommand("flowfixer.analyzeCurrentFile", async () => {
+      const editor = vscode9.window.activeTextEditor;
       if (!editor) {
-        vscode7.window.showWarningMessage("Visual Debugger: No active editor.");
+        vscode9.window.showWarningMessage("Visual Debugger: No active editor.");
         return;
       }
       const doc = editor.document;
-      const diagnostics = vscode7.languages.getDiagnostics(doc.uri);
+      const diagnostics = vscode9.languages.getDiagnostics(doc.uri);
       const errors = diagnostics.filter(
-        (d) => d.severity === vscode7.DiagnosticSeverity.Error
+        (d) => d.severity === vscode9.DiagnosticSeverity.Error
       );
       if (errors.length > 0) {
         const diag = errors[0];
@@ -73193,7 +73396,7 @@ async function activate(context) {
         };
         await handlePhase1(captured);
       } else {
-        const errorMsg = await vscode7.window.showInputBox({
+        const errorMsg = await vscode9.window.showInputBox({
           prompt: "No compiler errors found. Describe the bug (e.g., 'renders an extra item', 'TypeError: Cannot read properties of undefined')",
           placeHolder: "What went wrong?",
           ignoreFocusOut: true
@@ -73216,14 +73419,46 @@ async function activate(context) {
         };
         await handlePhase1(captured);
       }
+    }),
+    vscode9.commands.registerCommand("flowfixer.explainCodeLensError", async (file, line, message) => {
+      const doc = vscode9.workspace.textDocuments.find((d) => d.uri.fsPath === file);
+      const text = doc?.getText() ?? "";
+      const lines = text.split("\n");
+      const start = Math.max(0, line - 11);
+      const end = Math.min(lines.length, line + 10);
+      const codeContext = lines.slice(start, end).map((l, i2) => `${start + i2 + 1} | ${l}`).join("\n");
+      const captured = {
+        message,
+        file,
+        line,
+        language: doc?.languageId ?? "typescript",
+        codeContext,
+        severity: "error",
+        source: "diagnostics",
+        timestamp: Date.now()
+      };
+      await handlePhase1(captured);
+    }),
+    vscode9.commands.registerCommand("flowfixer.fixCodeLensError", async (file, line, message) => {
+      const action = await vscode9.window.showInformationMessage(
+        "Try fixing it yourself first! Use the error explanation to understand what went wrong, then apply the suggested fix.",
+        "Show Explanation",
+        "Open File"
+      );
+      if (action === "Show Explanation") {
+        await vscode9.commands.executeCommand("flowfixer.explainCodeLensError", file, line, message);
+      } else if (action === "Open File") {
+        const doc = await vscode9.workspace.openTextDocument(file);
+        await vscode9.window.showTextDocument(doc, { selection: new vscode9.Range(line - 1, 0, line - 1, 0) });
+      }
     })
   );
   context.subscriptions.push(errorListener, diffEngine, storage);
-  console.log(`${LOG8} activated successfully`);
-  vscode7.window.showInformationMessage("Visual Debugger is active! Errors will be explained automatically.");
+  console.log(`${LOG10} activated successfully`);
+  vscode9.window.showInformationMessage("Visual Debugger is active! Errors will be explained automatically.");
 }
 function deactivate() {
-  console.log(`${LOG8} deactivated`);
+  console.log(`${LOG10} deactivated`);
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

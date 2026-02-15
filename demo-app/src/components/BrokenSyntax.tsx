@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 export default function GreetingCard() {
   const [name, setName] = useState('')
-  const [showCard, setShowCard] = useState(false)
+  const [showCard, setShowCard] = 
 
   return (
     <div className="component-container">

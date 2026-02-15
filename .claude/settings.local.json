@@ -11,7 +11,9 @@
       "Bash(npx vsce:*)",
       "Bash(git merge:*)",
       "Bash(cd:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git restore:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
