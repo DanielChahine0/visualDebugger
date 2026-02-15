@@ -7,50 +7,68 @@ import * as vscode from "vscode";
  * Skips blank lines and `#` comments. Strips optional surrounding quotes from values.
  * Returns an empty map if no workspace is open or no `.env` file exists.
  */
+/**
+ * Reads a `.env` file from the workspace root and the extension directory.
+ * Returns a merged Map of key-value pairs.
+ * Skips blank lines and `#` comments. Strips optional surrounding quotes from values.
+ */
 export function loadEnv(): Map<string, string> {
-  const folders = vscode.workspace.workspaceFolders;
-  if (!folders || folders.length === 0) {
-    return new Map();
-  }
-
-  const envPath = path.join(folders[0].uri.fsPath, ".env");
-
-  let content: string;
-  try {
-    content = fs.readFileSync(envPath, "utf-8");
-  } catch {
-    return new Map();
-  }
-
   const env = new Map<string, string>();
 
-  for (const raw of content.split("\n")) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) {
-      continue;
-    }
+  // 1. Extension directory (stable location for keys)
+  const extensionEnvPath = path.join(__dirname, "..", ".env");
+  loadIntoMap(extensionEnvPath, env);
 
-    const eqIndex = line.indexOf("=");
-    if (eqIndex === -1) {
-      continue;
-    }
+  const folders = vscode.workspace.workspaceFolders;
+  if (folders && folders.length > 0) {
+    const wsPath = folders[0].uri.fsPath;
 
-    const key = line.slice(0, eqIndex).trim();
-    let value = line.slice(eqIndex + 1).trim();
+    // 2. Parent directory (covers many multi-repo setups)
+    const parentEnvPath = path.join(wsPath, "..", ".env");
+    loadIntoMap(parentEnvPath, env);
 
-    // Strip matching surrounding quotes (single or double)
-    if (
-      value.length >= 2 &&
-      ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'")))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    if (key && value) {
-      env.set(key, value);
-    }
+    // 3. Workspace root (highest priority)
+    const wsEnvPath = path.join(wsPath, ".env");
+    loadIntoMap(wsEnvPath, env);
   }
 
   return env;
+}
+
+function loadIntoMap(filePath: string, map: Map<string, string>): void {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return;
+    }
+    const content = fs.readFileSync(filePath, "utf-8");
+    for (const raw of content.split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line || line.startsWith("#")) {
+        continue;
+      }
+
+      const eqIndex = line.indexOf("=");
+      if (eqIndex === -1) {
+        continue;
+      }
+
+      const key = line.slice(0, eqIndex).trim();
+      let value = line.slice(eqIndex + 1).trim();
+
+      // Strip matching surrounding quotes (single or double)
+      if (
+        value.length >= 2 &&
+        ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'")))
+      ) {
+        value = value.slice(1, -1);
+      }
+
+      if (key && value) {
+        map.set(key, value);
+      }
+    }
+  } catch (err) {
+    console.warn(`[FlowFixer:EnvLoader] Failed to read ${filePath}:`, err);
+  }
 }
