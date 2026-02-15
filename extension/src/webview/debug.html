@@ -102,6 +102,37 @@
             line-height: 1.5;
         }
 
+        /* ── Back button ── */
+        .ff-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            margin-bottom: 12px;
+            font-size: 0.8em;
+            font-family: inherit;
+            color: var(--vscode-descriptionForeground);
+            background: none;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: color 0.1s ease-in-out, background-color 0.1s ease-in-out;
+        }
+
+        .ff-back-btn::before {
+            content: '\2190';
+        }
+
+        .ff-back-btn:hover {
+            color: var(--vscode-foreground);
+            background: var(--vscode-list-hoverBackground);
+        }
+
+        .ff-back-btn:focus-visible {
+            outline: 2px solid var(--vscode-focusBorder);
+            outline-offset: 2px;
+        }
+
         /* ── Section visibility ── */
         .panel-section {
             display: none;
@@ -158,6 +189,7 @@
          ================================================================ -->
     <div id="section-error-explanation" class="panel-section" role="region" aria-label="Error explanation">
         <div class="ff-panel">
+            <button class="ff-back-btn" id="back-btn-error" aria-label="Back to actions">Back</button>
             <!-- Skip link for keyboard/screen-reader users -->
             <a href="#error-section-quiz" class="sr-only sr-only--focusable">Skip to quiz</a>
 
@@ -240,6 +272,7 @@
          ================================================================ -->
     <div id="section-diff-review" class="panel-section" role="region" aria-label="Fix explanation">
         <div class="ff-panel">
+            <button class="ff-back-btn" id="back-btn-diff" aria-label="Back to actions">Back</button>
             <!-- Skip link for keyboard/screen-reader users -->
             <a href="#diff-section-todo" class="sr-only sr-only--focusable">Skip to action items</a>
 
@@ -430,7 +463,12 @@
             } else {
                 $('errors-state').style.display = 'none';
                 $('empty-state').style.display = '';
-                showPanelSection('actions');
+                // Don't switch away from error/diff views when errors clear.
+                // The diff engine's 500ms debounce hasn't fired yet, so switching
+                // to actions now would cause a flicker. Let the back button handle navigation.
+                if (activeView !== 'error' && activeView !== 'diff') {
+                    showPanelSection('actions');
+                }
                 announce('No errors found.');
             }
         }
@@ -676,6 +714,14 @@
             window.speechSynthesis.cancel();
             window.speechSynthesis.speak(u);
         }
+
+        // ── Back buttons ──
+        $('back-btn-error').addEventListener('click', function () {
+            showPanelSection('actions');
+        });
+        $('back-btn-diff').addEventListener('click', function () {
+            showPanelSection('actions');
+        });
 
         // ── Explain button ──
         $('explain-btn').addEventListener('click', function () {
