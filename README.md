@@ -7,9 +7,6 @@
 
 <div align="center">
 
-![Static Badge](https://img.shields.io/badge/Status-Hackathon_Submission-blue)
-![Static Badge](https://img.shields.io/badge/Powered_By-Gemini_2.0_Flash-blue)
-
 </div>
 
 ## 📖 About The Project
@@ -76,6 +73,11 @@ Built for the **CTRL HACK DEL**, utilizing **Google Gemini 2.0 Flash** for high-
    - Press `F5` to open a new VS Code window with the extension loaded.
 
 ---
+
+## Screenshots
+<img width="720" height="423" alt="ErrorFound" src="https://github.com/user-attachments/assets/ed4df175-92df-4ad2-8c3a-06278bfe6276" />
+<img width="720" height="423" alt="BugInfo1" src="https://github.com/user-attachments/assets/6b87c9eb-50e4-4a99-8a13-cbcccf6ca364" />  
+<img width="720" height="423" alt="BugDashboard1" src="https://github.com/user-attachments/assets/c4a6c667-f5a5-4f1e-9364-a7c3ceb06bec" />
 
 ## 💡 Usage
 
