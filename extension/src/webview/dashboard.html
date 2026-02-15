@@ -73,8 +73,8 @@
                     <svg width="100" height="100" viewBox="0 0 100 100">
                         <defs>
                             <linearGradient id="ff-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#A78BFA"/>
-                                <stop offset="100%" stop-color="#FB7185"/>
+                                <stop offset="0%" stop-color="#60A5FA"/>
+                                <stop offset="100%" stop-color="#22D3EE"/>
                             </linearGradient>
                         </defs>
                         <circle class="ff-progress-ring-bg" cx="50" cy="50" r="40"/>
@@ -142,11 +142,11 @@
         // Use CSS variables for chart colors to match theme
         const style = getComputedStyle(document.body);
         const colSyntax = style.getPropertyValue('--ff-syntax').trim() || '#FBBF24';
-        const colLogic = style.getPropertyValue('--ff-logic').trim() || '#818CF8';
+        const colLogic = style.getPropertyValue('--ff-logic').trim() || '#C084FC';
         const colRuntime = style.getPropertyValue('--ff-runtime').trim() || '#FB7185';
         const colGrid = 'rgba(255, 255, 255, 0.04)';
         const colText = style.getPropertyValue('--vscode-descriptionForeground').trim() || '#888';
-        const colTotal = '#A78BFA';
+        const colTotal = '#60A5FA';
 
         // Dynamic Time Generation (Relative to Now)
         const now = new Date();
@@ -212,7 +212,7 @@
         Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
         const tooltipConfig = {
             backgroundColor: 'rgba(20, 20, 30, 0.95)',
-            borderColor: 'rgba(167, 139, 250, 0.2)',
+            borderColor: 'rgba(96, 165, 250, 0.2)',
             borderWidth: 1,
             cornerRadius: 8,
             padding: 12,
@@ -394,7 +394,7 @@
                 datasets: [{
                     label: 'Count',
                     data: [syntaxCount, logicCount, runtimeCount],
-                    backgroundColor: ['rgba(251,191,36,0.25)', 'rgba(129,140,248,0.25)', 'rgba(251,113,133,0.25)'],
+                    backgroundColor: ['rgba(251,191,36,0.25)', 'rgba(192,132,252,0.25)', 'rgba(251,113,133,0.25)'],
                     borderColor: [colSyntax, colLogic, colRuntime],
                     borderWidth: 1.5,
                     borderRadius: 6
@@ -479,12 +479,12 @@
                         label: 'Total Bugs',
                         data: data,
                         borderColor: colTotal,
-                        backgroundColor: 'rgba(167, 139, 250, 0.08)',
+                        backgroundColor: 'rgba(96, 165, 250, 0.08)',
                         fill: true,
                         tension: 0.4,
                         pointRadius: 4,
                         pointBackgroundColor: colTotal,
-                        pointBorderColor: 'rgba(167, 139, 250, 0.3)',
+                        pointBorderColor: 'rgba(96, 165, 250, 0.3)',
                         pointBorderWidth: 2,
                         borderWidth: 2.5
                     }]

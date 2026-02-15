@@ -151,7 +151,7 @@ function launchConfetti(): void {
   const container = document.createElement("div");
   container.className = "ff-confetti-container";
   document.body.appendChild(container);
-  const colors = ["#A78BFA", "#FB7185", "#FBBF24", "#34D399", "#818CF8", "#C4B5FD"];
+  const colors = ["#60A5FA", "#22D3EE", "#FBBF24", "#34D399", "#93C5FD", "#38BDF8"];
   for (let c = 0; c < 30; c++) {
     const piece = document.createElement("div");
     piece.className = "ff-confetti-piece";

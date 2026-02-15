@@ -1,7 +1,7 @@
 /* ============================================================
    FlowFixer Design System
-   A warm, distinctive visual language for beginner developers.
-   Inspired by Linear, Raycast, and Notion — but uniquely ours.
+   A cool, distinctive visual language for beginner developers.
+   Inspired by Linear, Vercel, and Raycast — uniquely ours.
    ============================================================ */
 
 /* Import Plus Jakarta Sans — geometric, warm, modern */
@@ -12,18 +12,18 @@
 
 /* ── Design Tokens ──────────────────────────────────────────── */
 :root {
-    /* Brand — Warm violet-to-coral gradient signature */
-    --ff-accent: #A78BFA;
-    --ff-accent-dim: rgba(167, 139, 250, 0.15);
-    --ff-accent-glow: rgba(167, 139, 250, 0.25);
-    --ff-gradient: linear-gradient(135deg, #A78BFA, #FB7185);
-    --ff-gradient-subtle: linear-gradient(135deg, rgba(167,139,250,0.12), rgba(251,113,133,0.12));
+    /* Brand — Blue-to-cyan gradient signature */
+    --ff-accent: #60A5FA;
+    --ff-accent-dim: rgba(96, 165, 250, 0.15);
+    --ff-accent-glow: rgba(96, 165, 250, 0.25);
+    --ff-gradient: linear-gradient(135deg, #60A5FA, #22D3EE);
+    --ff-gradient-subtle: linear-gradient(135deg, rgba(96,165,250,0.12), rgba(34,211,238,0.12));
 
     /* Semantic — Error categories */
     --ff-syntax: #FBBF24;
     --ff-syntax-dim: rgba(251, 191, 36, 0.12);
-    --ff-logic: #818CF8;
-    --ff-logic-dim: rgba(129, 140, 248, 0.12);
+    --ff-logic: #C084FC;
+    --ff-logic-dim: rgba(192, 132, 252, 0.12);
     --ff-runtime: #FB7185;
     --ff-runtime-dim: rgba(251, 113, 133, 0.12);
     --ff-success: #34D399;
@@ -102,9 +102,9 @@ a {
     transition: color var(--duration-fast) var(--ease-smooth);
 }
 a:hover {
-    color: #C4B5FD;
+    color: #93C5FD;
     text-decoration: underline;
-    text-decoration-color: rgba(167, 139, 250, 0.3);
+    text-decoration-color: rgba(96, 165, 250, 0.3);
     text-underline-offset: 3px;
 }
 
@@ -168,9 +168,9 @@ code {
 }
 
 .card:hover {
-    border-color: rgba(167, 139, 250, 0.2);
+    border-color: rgba(96, 165, 250, 0.2);
     box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.2),
-                0 0 0 1px rgba(167, 139, 250, 0.08);
+                0 0 0 1px rgba(96, 165, 250, 0.08);
     transform: translateY(-1px);
 }
 
@@ -212,7 +212,7 @@ code {
 #category-badge[data-type="Logic"] {
     color: var(--ff-logic);
     background: var(--ff-logic-dim);
-    border-color: rgba(129, 140, 248, 0.25);
+    border-color: rgba(192, 132, 252, 0.25);
 }
 #category-badge[data-type="Runtime"] {
     color: var(--ff-runtime);
@@ -246,10 +246,10 @@ code {
     background: var(--ff-gradient);
     color: #fff;
     border: none;
-    box-shadow: 0 2px 8px rgba(167, 139, 250, 0.25);
+    box-shadow: 0 2px 8px rgba(96, 165, 250, 0.25);
 }
 .btn--primary:hover {
-    box-shadow: 0 4px 16px rgba(167, 139, 250, 0.35);
+    box-shadow: 0 4px 16px rgba(96, 165, 250, 0.35);
 }
 
 .btn--secondary {
@@ -259,7 +259,7 @@ code {
 }
 .btn--secondary:hover {
     background: var(--ff-surface-overlay);
-    border-color: rgba(167, 139, 250, 0.2);
+    border-color: rgba(96, 165, 250, 0.2);
 }
 
 .btn--success {
@@ -429,7 +429,7 @@ code {
     border-radius: var(--radius-sm);
     transition: border-color var(--duration-fast) var(--ease-smooth);
 }
-.stat-item:hover { border-color: rgba(167, 139, 250, 0.2); }
+.stat-item:hover { border-color: rgba(96, 165, 250, 0.2); }
 
 .stat-value {
     font-size: var(--text-2xl);
@@ -488,7 +488,7 @@ img, canvas, video { max-width: 100%; height: auto; }
 /* Focus area highlight */
 .focus-area {
     background: var(--ff-accent-dim);
-    border: 1px solid rgba(167, 139, 250, 0.2);
+    border: 1px solid rgba(96, 165, 250, 0.2);
     border-radius: var(--radius-sm);
     padding: var(--sp-3);
 }
@@ -500,8 +500,8 @@ img, canvas, video { max-width: 100%; height: auto; }
 
 /* Prism Token Overrides */
 .token.comment { color: #6a9955; }
-.token.keyword { color: #c084fc; }
-.token.string { color: #FB7185; }
+.token.keyword { color: #60A5FA; }
+.token.string { color: #F472B6; }
 
 /* ================================================================
    Debug Panel — Explanation & Diff Review UI
@@ -833,7 +833,7 @@ img, canvas, video { max-width: 100%; height: auto; }
     padding: var(--sp-4);
     border-radius: var(--radius-sm);
     background: var(--ff-gradient-subtle);
-    border: 1px solid rgba(167, 139, 250, 0.15);
+    border: 1px solid rgba(96, 165, 250, 0.15);
     position: relative;
 }
 
@@ -926,8 +926,8 @@ img, canvas, video { max-width: 100%; height: auto; }
 }
 
 @keyframes ffPlayingPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.2); }
-    50% { box-shadow: 0 0 0 6px rgba(167, 139, 250, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.2); }
+    50% { box-shadow: 0 0 0 6px rgba(96, 165, 250, 0); }
 }
 
 .ff-tts-status {
@@ -1195,7 +1195,7 @@ img, canvas, video { max-width: 100%; height: auto; }
     stroke-width: 6;
     stroke-linecap: round;
     transition: stroke-dashoffset 1.5s var(--ease-out);
-    filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.3));
+    filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.3));
 }
 
 .ff-progress-ring-text {
@@ -1319,25 +1319,25 @@ img, canvas, video { max-width: 100%; height: auto; }
     border-color: rgba(255, 255, 255, 0.06);
 }
 .ff-heatmap-cell[data-level="1"] {
-    background: rgba(167, 139, 250, 0.18);
-    border-color: rgba(167, 139, 250, 0.12);
+    background: rgba(96, 165, 250, 0.18);
+    border-color: rgba(96, 165, 250, 0.12);
 }
 .ff-heatmap-cell[data-level="2"] {
-    background: rgba(167, 139, 250, 0.35);
-    border-color: rgba(167, 139, 250, 0.2);
+    background: rgba(96, 165, 250, 0.35);
+    border-color: rgba(96, 165, 250, 0.2);
 }
 .ff-heatmap-cell[data-level="3"] {
-    background: rgba(167, 139, 250, 0.55);
-    border-color: rgba(167, 139, 250, 0.3);
+    background: rgba(96, 165, 250, 0.55);
+    border-color: rgba(96, 165, 250, 0.3);
 }
 .ff-heatmap-cell[data-level="4"] {
-    background: rgba(167, 139, 250, 0.8);
-    border-color: rgba(167, 139, 250, 0.5);
+    background: rgba(96, 165, 250, 0.8);
+    border-color: rgba(96, 165, 250, 0.5);
 }
 
 .ff-heatmap-cell:not([data-level="-1"]):hover {
     transform: scale(1.35);
-    box-shadow: 0 0 8px rgba(167, 139, 250, 0.3);
+    box-shadow: 0 0 8px rgba(96, 165, 250, 0.3);
     border-color: var(--ff-accent);
     z-index: 2;
     position: relative;
@@ -1353,7 +1353,7 @@ img, canvas, video { max-width: 100%; height: auto; }
     font-weight: 600;
     color: #fff;
     background: rgba(20, 20, 30, 0.95);
-    border: 1px solid rgba(167, 139, 250, 0.25);
+    border: 1px solid rgba(96, 165, 250, 0.25);
     border-radius: 6px;
     white-space: nowrap;
     transform: translate(-50%, -100%);
@@ -1412,10 +1412,10 @@ img, canvas, video { max-width: 100%; height: auto; }
     background: rgba(255, 255, 255, 0.03);
     border-color: rgba(255, 255, 255, 0.06);
 }
-.ff-heatmap-legend-cell[data-level="1"] { background: rgba(167, 139, 250, 0.18); }
-.ff-heatmap-legend-cell[data-level="2"] { background: rgba(167, 139, 250, 0.35); }
-.ff-heatmap-legend-cell[data-level="3"] { background: rgba(167, 139, 250, 0.55); }
-.ff-heatmap-legend-cell[data-level="4"] { background: rgba(167, 139, 250, 0.8); }
+.ff-heatmap-legend-cell[data-level="1"] { background: rgba(96, 165, 250, 0.18); }
+.ff-heatmap-legend-cell[data-level="2"] { background: rgba(96, 165, 250, 0.35); }
+.ff-heatmap-legend-cell[data-level="3"] { background: rgba(96, 165, 250, 0.55); }
+.ff-heatmap-legend-cell[data-level="4"] { background: rgba(96, 165, 250, 0.8); }
 
 /* ── Achievement Badges ─────────────────────────────────────── */
 .ff-achievements {
@@ -1443,7 +1443,7 @@ img, canvas, video { max-width: 100%; height: auto; }
 }
 
 .ff-achievement.unlocked {
-    border-color: rgba(167, 139, 250, 0.3);
+    border-color: rgba(96, 165, 250, 0.3);
     background: var(--ff-accent-dim);
 }
 .ff-achievement.unlocked:hover {
@@ -1532,7 +1532,7 @@ img, canvas, video { max-width: 100%; height: auto; }
     height: 68px;
     object-fit: contain;
     animation: ffLoaderFloat 2s ease-in-out infinite;
-    filter: drop-shadow(0 4px 14px rgba(167, 139, 250, 0.3));
+    filter: drop-shadow(0 4px 14px rgba(96, 165, 250, 0.3));
     border-radius: 12px;
 }
 
@@ -1541,8 +1541,8 @@ img, canvas, video { max-width: 100%; height: auto; }
     inset: -7px;
     border-radius: 50%;
     border: 2px solid transparent;
-    border-top-color: var(--ff-accent, #A78BFA);
-    border-right-color: var(--ff-accent, #A78BFA);
+    border-top-color: var(--ff-accent, #60A5FA);
+    border-right-color: var(--ff-accent, #60A5FA);
     animation: ffLoaderSpin 1.2s linear infinite;
     opacity: 0.55;
 }
@@ -1551,8 +1551,8 @@ img, canvas, video { max-width: 100%; height: auto; }
     inset: -13px;
     border-top-color: transparent;
     border-right-color: transparent;
-    border-bottom-color: #FB7185;
-    border-left-color: #FB7185;
+    border-bottom-color: #22D3EE;
+    border-left-color: #22D3EE;
     animation: ffLoaderSpin 2.2s linear infinite reverse;
     opacity: 0.3;
 }

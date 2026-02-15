@@ -82,8 +82,8 @@ function createTrendChart(labels: string[], data: number[]): void {
         {
           label: "Bugs",
           data,
-          borderColor: "#4fc3f7",
-          backgroundColor: "rgba(79,195,247,0.18)",
+          borderColor: "#60A5FA",
+          backgroundColor: "rgba(96,165,250,0.18)",
           tension: 0.25,
           fill: true,
           pointRadius: 3,
