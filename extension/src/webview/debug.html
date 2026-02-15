@@ -243,32 +243,33 @@
             <!-- Skip link for keyboard/screen-reader users -->
             <a href="#diff-section-todo" class="sr-only sr-only--focusable">Skip to action items</a>
 
+            <!-- Success banner -->
+            <div class="ff-success-banner" id="diff-success-banner" role="status">
+                <span class="ff-success-dot" aria-hidden="true"></span>
+                <span class="ff-success-text">No more errors</span>
+            </div>
+
             <!-- File context -->
             <div class="ff-file-bar" id="file-bar" style="display: none;" aria-label="File changed">
                 <span class="ff-file-name" id="diff-file"></span>
             </div>
 
-            <!-- 1. Quick Summary -->
+            <!-- 1. What Changed -->
             <section class="ff-section ff-section--summary" id="diff-section-summary"
                 aria-labelledby="diff-heading-summary" style="display: none;">
                 <h2 id="diff-heading-summary" class="ff-heading">
-                    Quick Summary
+                    What Changed
                 </h2>
                 <p class="ff-body" id="quick-summary"></p>
             </section>
 
-            <!-- 2. Why This Fixes It (progressive disclosure) -->
+            <!-- 2. Why This Works -->
             <section class="ff-section ff-section--why" id="diff-section-why"
                 aria-labelledby="diff-heading-why" style="display: none;">
-                <details class="ff-disclosure">
-                    <summary class="ff-disclosure-trigger" id="diff-heading-why">
-                        <span class="ff-disclosure-title">Why This Fixes It</span>
-                        <span class="ff-disclosure-hint" aria-hidden="true">Show details</span>
-                    </summary>
-                    <div class="ff-disclosure-body">
-                        <p class="ff-body" id="why-it-works"></p>
-                    </div>
-                </details>
+                <h2 id="diff-heading-why" class="ff-heading">
+                    Why This Works
+                </h2>
+                <p class="ff-body" id="why-it-works"></p>
             </section>
 
             <!-- 3. What To Do Next (interactive checklist) -->
@@ -570,7 +571,7 @@
             showSection('diff-section-summary', hasSummary);
             if (hasSummary) $('quick-summary').textContent = data.quickSummary;
 
-            // 2. Why This Fixes It
+            // 2. Why This Works
             var hasWhy = !!data.whyItWorks;
             showSection('diff-section-why', hasWhy);
             if (hasWhy) $('why-it-works').textContent = data.whyItWorks;

@@ -677,6 +677,33 @@ video {
     margin: 0 auto;
 }
 
+/* ── Success Banner (No more errors) ────────────────────── */
+.ff-success-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+    background: rgba(137, 209, 133, 0.08);
+    border: 1px solid rgba(137, 209, 133, 0.25);
+}
+
+.ff-success-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ff-success, #89d185);
+    flex-shrink: 0;
+}
+
+.ff-success-text {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--ff-success, #89d185);
+    letter-spacing: 0.2px;
+}
+
 /* ── File Context Bar ───────────────────────────────────── */
 .ff-file-bar {
     display: flex;
