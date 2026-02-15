@@ -739,6 +739,28 @@ video {
 .ff-section--takeaway { border-left-color: #d97706; }
 .ff-section--question { border-left-color: #7c3aed; }
 
+/* ── Error Panel Section Accents ─────────────────────────── */
+.ff-section--error { border-left-color: #f14c4c; }
+.ff-section--explanation { border-left-color: #3b82f6; }
+.ff-section--fix { border-left-color: #0d9488; }
+.ff-section--prevent { border-left-color: #d97706; }
+.ff-section--practices { border-left-color: #7c3aed; }
+.ff-section--prompt { border-left-color: #a855f7; }
+.ff-section--quiz { border-left-color: #ec4899; }
+
+/* ── TL;DR (error panel) ─────────────────────────────────── */
+.ff-tldr {
+    font-weight: 600;
+    font-size: 1em;
+    margin-top: 8px;
+    color: var(--vscode-foreground);
+}
+
+/* ── Quiz touch targets ──────────────────────────────────── */
+.quiz-option {
+    min-height: 36px;
+}
+
 /* ── Headings ───────────────────────────────────────────── */
 .ff-heading {
     display: flex;
