@@ -41,6 +41,7 @@ const MOCK_PHASE1: Phase1Response = {
   bestPractices:
     "Use optional chaining (data?.map()) or provide a fallback (data || []).map() to guard against undefined values.",
   keyTerms: ["Cannot read properties", "undefined", "map"],
+  suggestedPrompt: "Fix the TypeError in App.tsx at line 15 where data.map() fails because useState() has no initial value.\n\nContext:\n- data is used with .map() to render a list of items\n- useState() returns undefined by default when no argument is passed\n- .map() is an array method — it throws when called on undefined\n\nWhat to fix:\n- Add [] as the initial value: useState([])\n- Add a guard check before calling .map() to handle loading states\n\nExplain:\n- Why undefined causes this specific TypeError\n- What initial values prevent this class of bug\n- How to verify the fix works after applying it",
   quiz: {
     question: "Why does calling .map() on undefined throw an error?",
     options: [
@@ -64,6 +65,7 @@ const MOCK_PHASE1_SYNTAX: Phase1Response = {
   howToPrevent: "When you type an opening bracket, immediately type the closing one, then fill in the middle.",
   bestPractices: "Use an editor with bracket matching. Most editors highlight unmatched brackets in red.",
   keyTerms: ["Unexpected token", "expected ','", "closing parenthesis"],
+  suggestedPrompt: "Fix the SyntaxError in BrokenSyntax.tsx at line 17 where the return statement is missing a closing parenthesis.\n\nContext:\n- The return( on line 12 opens a parenthesis for multi-line JSX\n- The JSX block closes with </div> on line 16 but no ) follows\n- The parser hits } on line 18 and expects ) first\n\nWhat to fix:\n- Add a closing ) after the </div> on line 16 to match the ( on line 12\n\nExplain:\n- Why the parser reports 'expected ,' instead of 'expected )'\n- How bracket matching works in multi-line return statements\n- How to verify all parentheses are balanced after fixing",
   quiz: {
     question: "What is the root cause of this SyntaxError?",
     options: [
@@ -86,6 +88,7 @@ const MOCK_PHASE1_LOGIC: Phase1Response = {
   howToPrevent: "Array indices go from 0 to length - 1. Always use '< length' not '<= length'.",
   bestPractices: "Prefer .map() or for...of loops over manual index loops to eliminate off-by-one bugs.",
   keyTerms: ["off-by-one", "<= items.length", "undefined item"],
+  suggestedPrompt: "Fix the off-by-one bug in BrokenLogic.tsx at line 10 where the loop renders an extra undefined item.\n\nContext:\n- items is a 3-element array with indices 0, 1, 2\n- The for loop uses i <= items.length which iterates when i is 3\n- items[3] is undefined, causing an extra empty <li> to render\n\nWhat to fix:\n- Change the loop condition from i <= items.length to i < items.length\n\nExplain:\n- Why arrays with N elements have valid indices 0 to N-1\n- What happens when you access an index beyond the array bounds\n- How to verify the fix by checking the rendered list count",
   quiz: {
     question: "Why does the loop render an extra undefined item?",
     options: [
@@ -424,6 +427,70 @@ describe("llmClient", () => {
         expect(result.quiz.question.length).toBeGreaterThan(10);
         expect(result.quiz.explanation.length).toBeGreaterThan(10);
       }
+    });
+
+    it("returns suggestedPrompt in Phase1Response", async () => {
+      await initialize(makeSecrets("test-api-key"));
+      mockGenerateContent.mockResolvedValueOnce({
+        text: JSON.stringify(MOCK_PHASE1),
+      });
+
+      const result = await analyzeError({
+        language: "TypeScript",
+        filename: "App.tsx",
+        errorMessage: "TypeError: Cannot read properties of undefined (reading 'map')",
+        codeContext: "const items = data.map(item => <li>{item}</li>);",
+      });
+
+      expect(result.suggestedPrompt).toBeDefined();
+      expect(result.suggestedPrompt).toContain("Fix the TypeError");
+      expect(result.suggestedPrompt).toContain("Context:");
+      expect(result.suggestedPrompt).toContain("What to fix:");
+      expect(result.suggestedPrompt).toContain("Explain:");
+    });
+
+    it("suggestedPrompt is present for all bug categories", async () => {
+      await initialize(makeSecrets("test-api-key"));
+
+      for (const mock of [MOCK_PHASE1, MOCK_PHASE1_SYNTAX, MOCK_PHASE1_LOGIC]) {
+        mockGenerateContent.mockResolvedValueOnce({
+          text: JSON.stringify(mock),
+        });
+
+        const result = await analyzeError({
+          language: "TypeScript",
+          filename: "test.tsx",
+          errorMessage: "test error",
+          codeContext: "test code",
+        });
+
+        expect(result.suggestedPrompt).toBeDefined();
+        expect(typeof result.suggestedPrompt).toBe("string");
+        expect(result.suggestedPrompt.length).toBeGreaterThan(50);
+      }
+    });
+
+    it("prompt instructs Gemini to generate a suggestedPrompt", async () => {
+      await initialize(makeSecrets("test-api-key"));
+      mockGenerateContent.mockResolvedValueOnce({
+        text: JSON.stringify(MOCK_PHASE1),
+      });
+
+      await analyzeError({
+        language: "TypeScript",
+        filename: "App.tsx",
+        errorMessage: "TypeError: test",
+        codeContext: "code",
+      });
+
+      const call = mockGenerateContent.mock.calls[0][0];
+      const prompt = call.contents;
+
+      expect(prompt).toContain("suggestedPrompt");
+      expect(prompt).toContain("well-crafted debugging prompt");
+      expect(prompt).toContain("Context:");
+      expect(prompt).toContain("What to fix:");
+      expect(prompt).toContain("Explain:");
     });
   });
 

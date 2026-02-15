@@ -160,6 +160,7 @@ const PHASE1_SCHEMA = {
     howToPrevent: { type: Type.STRING },
     bestPractices: { type: Type.STRING },
     keyTerms: { type: Type.ARRAY, items: { type: Type.STRING } },
+    suggestedPrompt: { type: Type.STRING },
     quiz: {
       type: Type.OBJECT,
       properties: {
@@ -180,6 +181,7 @@ const PHASE1_SCHEMA = {
     "howToPrevent",
     "bestPractices",
     "keyTerms",
+    "suggestedPrompt",
     "quiz",
   ],
 } as const;
@@ -233,6 +235,13 @@ Respond with a JSON object containing:
 
 - "keyTerms": 1-3 key words or short phrases from the error to highlight.
 
+- "suggestedPrompt": Generate a detailed, well-crafted debugging prompt that the student SHOULD have written instead of "fix the bug". This prompt teaches students what a good debugging prompt looks like. Format it as a ready-to-copy prompt with:
+  1. A clear one-line description of the error with file and line reference
+  2. A "Context:" section listing 2-3 bullet points about what the code does and why the error occurs
+  3. A "What to fix:" section with 1-2 specific actionable bullet points
+  4. An "Explain:" section with 2-3 bullet points asking for understanding (why, what, how to verify)
+  Use newlines for readability. Do NOT use markdown headers — use plain text labels followed by colons. Keep total length under 200 words.
+
 - "quiz": A multiple-choice question (4 options, one correct) testing whether the student understands WHY the error happened — not just what to do. The wrong options should be plausible but clearly wrong if you understood the explanation. Include a brief explanation of why the correct answer is right.
 
 ## Example 1: Syntax Error
@@ -260,6 +269,7 @@ Output:
   "howToPrevent": "When you type an opening bracket or parenthesis, immediately type the closing one, then fill in the middle.",
   "bestPractices": "Use an editor with bracket matching enabled. Most editors highlight unmatched brackets in red.",
   "keyTerms": ["Unexpected token", "expected ','", "closing parenthesis"],
+  "suggestedPrompt": "Fix the SyntaxError in BrokenSyntax.tsx at line 17 where the return statement is missing a closing parenthesis.\\n\\nContext:\\n- The return( on line 12 opens a parenthesis for multi-line JSX\\n- The JSX block closes with </div> on line 16 but no ) follows\\n- The parser hits } on line 18 and expects ) first\\n\\nWhat to fix:\\n- Add a closing ) after the </div> on line 16 to match the ( on line 12\\n\\nExplain:\\n- Why the parser reports 'expected ,' instead of 'expected )'\\n- How bracket matching works in multi-line return statements\\n- How to verify all parentheses are balanced after fixing",
   "quiz": {
     "question": "What is the root cause of this SyntaxError?",
     "options": [
@@ -296,6 +306,7 @@ Output:
   "howToPrevent": "Remember: array indices go from 0 to length - 1. Always use '< length' (not '<= length') when looping through arrays.",
   "bestPractices": "Prefer .map() or for...of loops over manual index loops. They handle bounds automatically and eliminate off-by-one bugs.",
   "keyTerms": ["off-by-one", "<= items.length", "undefined item"],
+  "suggestedPrompt": "Fix the off-by-one bug in BrokenLogic.tsx at line 10 where the loop renders an extra undefined item.\\n\\nContext:\\n- items is a 3-element array with indices 0, 1, 2\\n- The for loop uses i <= items.length which iterates when i is 3\\n- items[3] is undefined, causing an extra empty <li> to render\\n\\nWhat to fix:\\n- Change the loop condition from i <= items.length to i < items.length\\n\\nExplain:\\n- Why arrays with N elements have valid indices 0 to N-1\\n- What happens when you access an index beyond the array bounds\\n- How to verify the fix by checking the rendered list count",
   "quiz": {
     "question": "Why does the loop render an extra undefined item?",
     "options": [
@@ -334,6 +345,7 @@ Output:
   "howToPrevent": "Always give useState a default value that matches how you use the variable. If you call .map(), initialize with [].",
   "bestPractices": "Use optional chaining (data?.map()) or nullish coalescing ((data ?? []).map()) to guard against undefined values in async data flows.",
   "keyTerms": ["Cannot read properties", "undefined", "map"],
+  "suggestedPrompt": "Fix the TypeError in BrokenRuntime.tsx at line 10 where data.map() fails because useState() has no initial value.\\n\\nContext:\\n- data is used with .map() to render a list of items\\n- useState() returns undefined by default when no argument is passed\\n- .map() is an array method — it throws when called on undefined\\n\\nWhat to fix:\\n- Add [] as the initial value: useState([])\\n- Add a guard check before calling .map() to handle loading states\\n\\nExplain:\\n- Why undefined causes this specific TypeError\\n- What initial values prevent this class of bug\\n- How to verify the fix works after applying it",
   "quiz": {
     "question": "Why does calling .map() on 'data' throw a TypeError?",
     "options": [

@@ -313,6 +313,28 @@ code {
     font-size: 0.95em;
 }
 
+/* ── Suggested Prompt Block ─────────────────────────────────── */
+.prompt-block {
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 0.85em;
+    line-height: 1.5;
+    background-color: var(--vscode-textCodeBlock-background);
+    border: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.35));
+    border-left: 3px solid var(--ff-accent, #7c3aed);
+    border-radius: 4px;
+    padding: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.btn--success {
+    background-color: var(--ff-success, #22c55e) !important;
+    color: #fff !important;
+    border-color: var(--ff-success, #22c55e) !important;
+}
+
 /* ── Diff View (Native Editor Look) ────────────────────────── */
 .diff-view {
     font-family: var(--vscode-editor-font-family);
