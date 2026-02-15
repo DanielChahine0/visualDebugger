@@ -23,6 +23,12 @@ export class DiffEngine implements vscode.Disposable {
   /** Debounce timer for diagnostics-based detection */
   private diagDebounceTimer: NodeJS.Timeout | undefined;
 
+  /** Debounce timer for content-change-based detection */
+  private contentChangeTimer: NodeJS.Timeout | undefined;
+
+  /** Error count when tracking started (to detect when errors decrease) */
+  private initialErrorCount: number | undefined;
+
   constructor() {
     // Capture content just before save
     this.disposables.push(
@@ -47,7 +53,6 @@ export class DiffEngine implements vscode.Disposable {
     this.disposables.push(
       vscode.languages.onDidChangeDiagnostics((e) => {
         if (!this.tracking || !this.trackedUri) {
-          console.log(`${LOG} onDidChangeDiagnostics: not tracking, skipping`);
           return;
         }
 
@@ -71,25 +76,77 @@ export class DiffEngine implements vscode.Disposable {
         const errors = diagnostics.filter(
           (d) => d.severity === vscode.DiagnosticSeverity.Error
         );
-        console.log(`${LOG} tracked file diagnostics: ${errors.length} errors`);
+        console.log(`${LOG} tracked file diagnostics: ${errors.length} errors (initial: ${this.initialErrorCount ?? "?"})`);
 
         if (errors.length === 0) {
           // Errors cleared — a fix was applied. Debounce briefly so content settles.
           console.log(`${LOG} errors cleared on ${trackedUriObj.fsPath}, starting 500ms debounce`);
-          // Capture the URI NOW so a later startTracking() call can't overwrite it.
-          const clearedUri = this.trackedUri;
-          if (this.diagDebounceTimer) {
-            clearTimeout(this.diagDebounceTimer);
-          }
-          this.diagDebounceTimer = setTimeout(() => {
-            this.diagDebounceTimer = undefined;
-            void this.computeDiffForTrackedFile(clearedUri);
-          }, 500);
+          this.scheduleDiffComputation(this.trackedUri);
+        } else if (
+          this.initialErrorCount !== undefined &&
+          errors.length < this.initialErrorCount
+        ) {
+          // Error count decreased — the tracked error was likely fixed even if
+          // other errors remain in the file.  Trigger diff detection.
+          console.log(`${LOG} error count decreased (${this.initialErrorCount} -> ${errors.length}), starting 500ms debounce`);
+          this.scheduleDiffComputation(this.trackedUri);
         }
       })
     );
 
+    // Detect content changes in the tracked file (handles AI tools that
+    // modify the buffer without saving and without immediately clearing
+    // diagnostics).
+    this.disposables.push(
+      vscode.workspace.onDidChangeTextDocument((e) => {
+        if (!this.tracking || !this.trackedUri) {
+          return;
+        }
+        if (e.document.uri.fsPath !== this.trackedUri) {
+          return;
+        }
+        if (e.contentChanges.length === 0) {
+          return;
+        }
+
+        // Content changed on the tracked file. The diagnostics path may
+        // still fire (e.g. after the language server revalidates), but if
+        // the fix doesn't clear ALL diagnostics, this path ensures we
+        // still capture the diff after a longer debounce (1.5s) to let
+        // the language server settle.
+        if (this.contentChangeTimer) {
+          clearTimeout(this.contentChangeTimer);
+        }
+        const uri = this.trackedUri;
+        this.contentChangeTimer = setTimeout(() => {
+          this.contentChangeTimer = undefined;
+          // Only fire if the diagnostics path hasn't already handled it
+          if (this.tracking && this.trackedUri === uri) {
+            console.log(`${LOG} content change debounce fired for ${uri}`);
+            void this.computeDiffForTrackedFile(uri);
+          }
+        }, 1500);
+      })
+    );
+
     console.log(`${LOG} initialized`);
+  }
+
+  /** Schedule a debounced diff computation, cancelling any pending timers. */
+  private scheduleDiffComputation(fileUri: string): void {
+    const clearedUri = fileUri;
+    if (this.diagDebounceTimer) {
+      clearTimeout(this.diagDebounceTimer);
+    }
+    // Also cancel the content-change timer since diagnostics already triggered
+    if (this.contentChangeTimer) {
+      clearTimeout(this.contentChangeTimer);
+      this.contentChangeTimer = undefined;
+    }
+    this.diagDebounceTimer = setTimeout(() => {
+      this.diagDebounceTimer = undefined;
+      void this.computeDiffForTrackedFile(clearedUri);
+    }, 500);
   }
 
   /** Start tracking changes to a specific file after an error is detected.
@@ -111,6 +168,14 @@ export class DiffEngine implements vscode.Disposable {
 
     this.tracking = true;
     this.trackedUri = fileUri;
+
+    // Capture the current error count so we can detect when it decreases
+    const uri = vscode.Uri.file(fileUri);
+    const diagnostics = vscode.languages.getDiagnostics(uri);
+    this.initialErrorCount = diagnostics.filter(
+      (d) => d.severity === vscode.DiagnosticSeverity.Error
+    ).length;
+    console.log(`${LOG} initial error count: ${this.initialErrorCount}`);
 
     // Snapshot current content immediately
     const doc = vscode.workspace.textDocuments.find(
@@ -149,10 +214,15 @@ export class DiffEngine implements vscode.Disposable {
   stopTracking(): void {
     this.tracking = false;
     this.trackedUri = undefined;
+    this.initialErrorCount = undefined;
     this.beforeSaveContent.clear();
     if (this.diagDebounceTimer) {
       clearTimeout(this.diagDebounceTimer);
       this.diagDebounceTimer = undefined;
+    }
+    if (this.contentChangeTimer) {
+      clearTimeout(this.contentChangeTimer);
+      this.contentChangeTimer = undefined;
     }
     console.log(`${LOG} stopped tracking`);
   }

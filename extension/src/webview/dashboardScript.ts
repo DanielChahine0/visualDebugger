@@ -147,12 +147,21 @@ function renderDashboard(bugs: BugRecord[]): void {
   }
 }
 
-window.addEventListener("message", (event) => {
-  const msg = event.data;
-  if (msg.type === "showDashboard") {
-    document.getElementById("empty-state")!.style.display = "none";
-    document.getElementById("dashboard-content")!.style.display = "block";
-    renderDashboard(msg.data.bugs as BugRecord[]);
-    setLiveStatus("Dashboard updated.");
-  }
-});
+let _dashboardInitialized = false;
+
+function initDashboardListeners(): void {
+  if (_dashboardInitialized) return;
+  _dashboardInitialized = true;
+
+  window.addEventListener("message", (event) => {
+    const msg = event.data;
+    if (msg.type === "showDashboard") {
+      document.getElementById("empty-state")!.style.display = "none";
+      document.getElementById("dashboard-content")!.style.display = "block";
+      renderDashboard(msg.data.bugs as BugRecord[]);
+      setLiveStatus("Dashboard updated.");
+    }
+  });
+}
+
+initDashboardListeners();

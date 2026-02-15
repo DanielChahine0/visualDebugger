@@ -106,7 +106,15 @@ export async function analyzeError(request: ErrorAnalysisRequest): Promise<Phase
     if (!text) {
       throw new FlowFixerError("Gemini returned an empty response");
     }
-    return JSON.parse(text) as Phase1Response;
+    try {
+      return JSON.parse(text) as Phase1Response;
+    } catch (parseErr) {
+      console.error(`${LOG} Phase 1 JSON parse failed. Raw response:`, text);
+      throw new FlowFixerError(
+        "Gemini returned invalid JSON in Phase 1 response",
+        parseErr,
+      );
+    }
   } catch (err) {
     if (err instanceof FlowFixerError) throw err;
     const detail = extractErrorDetail(err);
@@ -140,7 +148,15 @@ export async function analyzeDiff(request: DiffAnalysisRequest): Promise<Phase2R
     if (!text) {
       throw new FlowFixerError("Gemini returned an empty response");
     }
-    return JSON.parse(text) as Phase2Response;
+    try {
+      return JSON.parse(text) as Phase2Response;
+    } catch (parseErr) {
+      console.error(`${LOG} Phase 2 JSON parse failed. Raw response:`, text);
+      throw new FlowFixerError(
+        "Gemini returned invalid JSON in Phase 2 response",
+        parseErr,
+      );
+    }
   } catch (err) {
     if (err instanceof FlowFixerError) throw err;
     const detail = extractErrorDetail(err);
@@ -155,8 +171,20 @@ export async function analyzeDiff(request: DiffAnalysisRequest): Promise<Phase2R
 
 /** Pull a human-readable detail string from an unknown error. */
 function extractErrorDetail(err: unknown): string {
+  // Check structured properties first (e.g., from @google/genai SDK errors)
+  if (err && typeof err === "object") {
+    const statusCode =
+      (err as Record<string, unknown>).status ??
+      (err as Record<string, unknown>).httpStatus ??
+      (err as Record<string, unknown>).statusCode;
+    if (statusCode === 401) return "Invalid API key";
+    if (statusCode === 403) return "API key lacks permission";
+    if (statusCode === 429) return "Rate limit exceeded — wait and retry";
+    if (statusCode === 500) return "Gemini server error — retry later";
+  }
+
+  // Fall back to string matching on the error message
   if (err instanceof Error) {
-    // Google GenAI SDK often puts HTTP status in the message
     const msg = err.message;
     if (msg.includes("401") || msg.includes("UNAUTHENTICATED")) return "Invalid API key";
     if (msg.includes("403") || msg.includes("PERMISSION_DENIED")) return "API key lacks permission";
