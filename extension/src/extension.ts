@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { ErrorListener } from "./errorListener";
 import { DiffEngine } from "./diffEngine";
-import { initialize as initLLM, analyzeError, analyzeDiff, isInitialized, FlowFixerError } from "./llmClient";
+import { initialize as initLLM, analyzeError, analyzeDiff, isInitialized, testConnection, FlowFixerError } from "./llmClient";
 import { FlowFixerStorage } from "./storage";
 import { ErrorPanelProvider } from "./panels/ErrorPanel";
 import { DiffPanelProvider } from "./panels/DiffPanel";
@@ -353,6 +353,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           updateStatus("needsKey");
           vscode.window.showWarningMessage("Visual Debugger: Key saved but initialization failed. Check the key.");
         }
+      }
+    }),
+    vscode.commands.registerCommand("flowfixer.testGeminiConnection", async () => {
+      try {
+        if (!isInitialized()) {
+          // Attempt to init if not already (e.g. if key was just added to .env)
+          await initLLM(mergedSecrets);
+        }
+        
+        vscode.window.showInformationMessage("Visual Debugger: Testing Gemini connection...");
+        const response = await testConnection();
+        vscode.window.showInformationMessage(`Visual Debugger: Connection Successful! Gemini replied: "${response}"`);
+        updateStatus("ready");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage(`Visual Debugger: Connection Failed. ${msg}`);
+        updateStatus("needsKey");
       }
     }),
     vscode.commands.registerCommand("flowfixer.setElevenLabsKey", async () => {

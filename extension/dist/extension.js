@@ -71981,6 +71981,22 @@ async function initialize(secrets) {
 function isInitialized() {
   return genai !== void 0;
 }
+async function testConnection() {
+  if (!genai) {
+    throw new FlowFixerError("LLM client not initialized. Call initialize() first.");
+  }
+  try {
+    const response = await genai.models.generateContent({
+      model: MODEL,
+      contents: {
+        parts: [{ text: "Reply with 'OK' only." }]
+      }
+    });
+    return response.text || "No response text";
+  } catch (err) {
+    throw new FlowFixerError("Connection test failed", err);
+  }
+}
 async function analyzeError(request) {
   if (!genai) {
     throw new FlowFixerError("LLM client not initialized. Call initialize() first.");
@@ -73091,6 +73107,21 @@ async function activate(context) {
           updateStatus("needsKey");
           vscode7.window.showWarningMessage("Visual Debugger: Key saved but initialization failed. Check the key.");
         }
+      }
+    }),
+    vscode7.commands.registerCommand("flowfixer.testGeminiConnection", async () => {
+      try {
+        if (!isInitialized()) {
+          await initialize(mergedSecrets);
+        }
+        vscode7.window.showInformationMessage("Visual Debugger: Testing Gemini connection...");
+        const response = await testConnection();
+        vscode7.window.showInformationMessage(`Visual Debugger: Connection Successful! Gemini replied: "${response}"`);
+        updateStatus("ready");
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        vscode7.window.showErrorMessage(`Visual Debugger: Connection Failed. ${msg}`);
+        updateStatus("needsKey");
       }
     }),
     vscode7.commands.registerCommand("flowfixer.setElevenLabsKey", async () => {

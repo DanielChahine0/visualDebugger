@@ -58,6 +58,30 @@ export function isInitialized(): boolean {
 }
 
 /**
+ * Validates the connection by making a minimal API call.
+ * @returns The definition of "Hello" or a confirmation message.
+ * @throws FlowFixerError if connection fails.
+ */
+export async function testConnection(): Promise<string> {
+  if (!genai) {
+    throw new FlowFixerError("LLM client not initialized. Call initialize() first.");
+  }
+
+  try {
+    const response = await genai.models.generateContent({
+      model: MODEL,
+      contents: {
+        parts: [{ text: "Reply with 'OK' only." }],
+      },
+    });
+    return response.text || "No response text";
+  } catch (err) {
+    throw new FlowFixerError("Connection test failed", err);
+  }
+}
+
+
+/**
  * Phase 1 — Explain an error for a student.
  * @throws FlowFixerError on API failure or empty response
  */

@@ -48,6 +48,10 @@
         "title": "Visual Debugger: Set Gemini API Key"
       },
       {
+        "command": "flowfixer.testGeminiConnection",
+        "title": "Visual Debugger: Test Gemini Connection"
+      },
+      {
         "command": "flowfixer.setElevenLabsKey",
         "title": "Visual Debugger: Set ElevenLabs API Key"
       },
