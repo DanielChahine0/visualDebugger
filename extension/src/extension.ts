@@ -99,7 +99,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     vscode.languages.onDidChangeDiagnostics(() => updateActionsPanel()),
-    vscode.window.onDidChangeActiveTextEditor(() => updateActionsPanel())
+    vscode.window.onDidChangeActiveTextEditor(() => updateActionsPanel()),
+    vscode.workspace.onDidSaveTextDocument(async () => {
+      const bugs = await phase1.getBugsWithFallback();
+      dashboardPanel.postMessage({ type: "showDashboard", data: { bugs } });
+    })
   );
 
   // Fire once on activation to pick up existing errors
