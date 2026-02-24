@@ -41,8 +41,8 @@
             font-family: var(--vscode-editor-font-family, monospace);
             font-size: 0.83em;
             color: var(--vscode-foreground);
-            background: var(--vd-surface, rgba(255,255,255,0.03));
-            border: 1px solid var(--vd-border, rgba(255,255,255,0.08));
+            background: var(--vd-surface, rgba(255, 255, 255, 0.03));
+            border: 1px solid var(--vd-border, rgba(255, 255, 255, 0.08));
             border-left: 3px solid var(--vd-runtime, #FB7185);
             border-radius: 0 var(--radius-sm, 6px) var(--radius-sm, 6px) 0;
             padding: 10px 14px;
@@ -119,8 +119,8 @@
             font-weight: 600;
             font-family: inherit;
             color: var(--vscode-descriptionForeground);
-            background: var(--vd-surface, rgba(255,255,255,0.03));
-            border: 1px solid var(--vd-border, rgba(255,255,255,0.08));
+            background: var(--vd-surface, rgba(255, 255, 255, 0.03));
+            border: 1px solid var(--vd-border, rgba(255, 255, 255, 0.08));
             cursor: pointer;
             border-radius: var(--radius-sm, 6px);
             transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -133,7 +133,7 @@
 
         .vd-back-btn:hover {
             color: var(--vd-accent, #60A5FA);
-            background: var(--vd-accent-dim, rgba(96,165,250,0.15));
+            background: var(--vd-accent-dim, rgba(96, 165, 250, 0.15));
             border-color: rgba(96, 165, 250, 0.2);
             transform: translateX(-2px);
         }
@@ -157,8 +157,13 @@
         }
 
         /* ── Utility ── */
-        .mt-8 { margin-top: 8px; }
-        .mb-8 { margin-bottom: 8px; }
+        .mt-8 {
+            margin-top: 8px;
+        }
+
+        .mb-8 {
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 
@@ -184,7 +189,8 @@
             </div>
 
             <!-- Loading state (branded logo animation) -->
-            <div id="loading-skeleton" class="vd-loader" style="display: none;" role="status" aria-label="Analyzing error...">
+            <div id="loading-skeleton" class="vd-loader" style="display: none;" role="status"
+                aria-label="Analyzing error...">
                 <div class="vd-loader-icon-wrap">
                     <div class="vd-loader-ring"></div>
                     <div class="vd-loader-ring vd-loader-ring--outer"></div>
@@ -196,20 +202,23 @@
 
             <!-- No errors state (SVG empty state) -->
             <div id="empty-state" class="actions-empty" role="status">
-                <svg class="vd-empty-svg" width="120" height="64" viewBox="0 0 120 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <svg class="vd-empty-svg" width="120" height="64" viewBox="0 0 120 64" fill="none"
+                    xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <defs>
                         <linearGradient id="empty-grad" x1="0" y1="0" x2="120" y2="64" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.2"/>
-                            <stop offset="100%" stop-color="#22D3EE" stop-opacity="0.2"/>
+                            <stop offset="0%" stop-color="#60A5FA" stop-opacity="0.2" />
+                            <stop offset="100%" stop-color="#22D3EE" stop-opacity="0.2" />
                         </linearGradient>
                     </defs>
-                    <rect x="4" y="4" width="112" height="56" rx="10" stroke="url(#empty-grad)" stroke-width="1"/>
-                    <text x="16" y="38" font-family="var(--vscode-editor-font-family, monospace)" font-size="15" fill="var(--vscode-descriptionForeground)" opacity="0.5">&gt; _</text>
-                    <rect x="38" y="30" width="8" height="2" rx="1" fill="var(--vscode-descriptionForeground)" opacity="0.15">
-                        <animate attributeName="opacity" values="0.15;0.4;0.15" dur="1.2s" repeatCount="indefinite"/>
+                    <rect x="4" y="4" width="112" height="56" rx="10" stroke="url(#empty-grad)" stroke-width="1" />
+                    <text x="16" y="38" font-family="var(--vscode-editor-font-family, monospace)" font-size="15"
+                        fill="var(--vscode-descriptionForeground)" opacity="0.5">&gt; _</text>
+                    <rect x="38" y="30" width="8" height="2" rx="1" fill="var(--vscode-descriptionForeground)"
+                        opacity="0.15">
+                        <animate attributeName="opacity" values="0.15;0.4;0.15" dur="1.2s" repeatCount="indefinite" />
                     </rect>
                     <circle cx="100" cy="16" r="3" fill="#34D399" opacity="0.6">
-                        <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.5s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.5s" repeatCount="indefinite" />
                     </circle>
                 </svg>
                 <div class="actions-empty-heading">All clear</div>
@@ -228,17 +237,21 @@
             <a href="#error-section-quiz" class="sr-only sr-only--focusable">Skip to quiz</a>
 
             <!-- 1. Error Location -->
-            <section class="vd-section vd-section--error" id="error-section-error" aria-labelledby="error-heading-error">
+            <section class="vd-section vd-section--error" id="error-section-error"
+                aria-labelledby="error-heading-error">
                 <h2 id="error-heading-error" class="vd-heading">
                     <span id="category-badge" class="badge"></span>
                     <span class="text-muted text-sm" id="error-location"></span>
                 </h2>
-                <p id="error-message" class="vd-body" style="font-family: var(--vscode-editor-font-family, monospace); background-color: var(--vscode-textCodeBlock-background); padding: 8px; border-radius: 3px; word-break: break-word;"></p>
+                <p id="error-message" class="vd-body"
+                    style="font-family: var(--vscode-editor-font-family, monospace); background-color: var(--vscode-textCodeBlock-background); padding: 8px; border-radius: 3px; word-break: break-word;">
+                </p>
                 <p class="vd-body text-muted text-sm" id="tldr-text" style="margin-top: 8px; font-weight: 600;"></p>
             </section>
 
             <!-- 2. What Happened -->
-            <section class="vd-section vd-section--explanation" id="error-section-explanation" aria-labelledby="error-heading-explanation" style="display: none;">
+            <section class="vd-section vd-section--explanation" id="error-section-explanation"
+                aria-labelledby="error-heading-explanation" style="display: none;">
                 <h2 id="error-heading-explanation" class="vd-heading">
                     What Happened
                 </h2>
@@ -246,7 +259,8 @@
             </section>
 
             <!-- 3. How to Fix -->
-            <section class="vd-section vd-section--fix" id="error-section-fix" aria-labelledby="error-heading-fix" style="display: none;">
+            <section class="vd-section vd-section--fix" id="error-section-fix" aria-labelledby="error-heading-fix"
+                style="display: none;">
                 <h2 id="error-heading-fix" class="vd-heading">
                     How to Fix
                 </h2>
@@ -254,7 +268,8 @@
             </section>
 
             <!-- 4. How to Prevent (progressive disclosure) -->
-            <section class="vd-section vd-section--prevent" id="error-section-prevent" aria-labelledby="error-heading-prevent" style="display: none;">
+            <section class="vd-section vd-section--prevent" id="error-section-prevent"
+                aria-labelledby="error-heading-prevent" style="display: none;">
                 <details class="vd-disclosure">
                     <summary class="vd-disclosure-trigger" id="error-heading-prevent">
                         <span class="vd-disclosure-title">How to Prevent This</span>
@@ -267,7 +282,8 @@
             </section>
 
             <!-- 5. Best Practices (progressive disclosure) -->
-            <section class="vd-section vd-section--practices" id="error-section-practices" aria-labelledby="error-heading-practices" style="display: none;">
+            <section class="vd-section vd-section--practices" id="error-section-practices"
+                aria-labelledby="error-heading-practices" style="display: none;">
                 <details class="vd-disclosure">
                     <summary class="vd-disclosure-trigger" id="error-heading-practices">
                         <span class="vd-disclosure-title">Best Practice</span>
@@ -280,17 +296,21 @@
             </section>
 
             <!-- 6. Suggested Prompt -->
-            <section class="vd-section vd-section--prompt" id="error-section-prompt" aria-labelledby="error-heading-prompt" style="display: none;">
+            <section class="vd-section vd-section--prompt" id="error-section-prompt"
+                aria-labelledby="error-heading-prompt" style="display: none;">
                 <h2 id="error-heading-prompt" class="vd-heading">
                     Try This Prompt Instead
                 </h2>
-                <p class="vd-body text-muted text-sm" style="margin-bottom: 8px;">Instead of "fix the bug," try a prompt like this:</p>
+                <p class="vd-body text-muted text-sm" style="margin-bottom: 8px;">Instead of "fix the bug," try a prompt
+                    like this:</p>
                 <div class="prompt-block" id="prompt-text"></div>
-                <button class="btn btn--secondary mt-8" id="copy-prompt-btn" style="width: 100%; min-height: 36px;" aria-label="Copy prompt to clipboard">Copy Prompt</button>
+                <button class="btn btn--secondary mt-8" id="copy-prompt-btn" style="width: 100%; min-height: 36px;"
+                    aria-label="Copy prompt to clipboard">Copy Prompt</button>
             </section>
 
             <!-- 7. Quiz -->
-            <section class="vd-section vd-section--quiz" id="error-section-quiz" aria-labelledby="error-heading-quiz" style="display: none;">
+            <section class="vd-section vd-section--quiz" id="error-section-quiz" aria-labelledby="error-heading-quiz"
+                style="display: none;">
                 <h2 id="error-heading-quiz" class="vd-heading">
                     Test Yourself
                 </h2>
@@ -331,8 +351,8 @@
             </section>
 
             <!-- 2. Why This Works -->
-            <section class="vd-section vd-section--why" id="divd-section-why"
-                aria-labelledby="divd-heading-why" style="display: none;">
+            <section class="vd-section vd-section--why" id="divd-section-why" aria-labelledby="divd-heading-why"
+                style="display: none;">
                 <h2 id="divd-heading-why" class="vd-heading">
                     Why This Works
                 </h2>
@@ -340,13 +360,12 @@
             </section>
 
             <!-- 3. What To Do Next (interactive checklist) -->
-            <section class="vd-section vd-section--todo" id="divd-section-todo"
-                aria-labelledby="divd-heading-todo" style="display: none;">
+            <section class="vd-section vd-section--todo" id="divd-section-todo" aria-labelledby="divd-heading-todo"
+                style="display: none;">
                 <h2 id="divd-heading-todo" class="vd-heading">
                     What To Do Next
                 </h2>
-                <ul class="vd-checklist" id="what-to-do-next" role="list"
-                    aria-label="Steps to check the fix"></ul>
+                <ul class="vd-checklist" id="what-to-do-next" role="list" aria-label="Steps to check the fix"></ul>
                 <p class="vd-check-done" id="check-done" style="display: none;" aria-live="polite">
                     All done -- nice work!
                 </p>
@@ -384,8 +403,10 @@
         <div class="vd-panel">
             <div class="vd-tts-bar" id="tts-controls" role="region" aria-label="Read aloud controls">
                 <div class="vd-voice-group" role="radiogroup" aria-label="Voice">
-                    <button class="vd-voice-btn active" id="voice-female" role="radio" aria-checked="true">Elise voice</button>
-                    <button class="vd-voice-btn" id="voice-male" role="radio" aria-checked="false" style="display:none;" disabled>Hidden</button>
+                    <button class="vd-voice-btn active" id="voice-female" role="radio" aria-checked="true">Elise
+                        voice</button>
+                    <button class="vd-voice-btn" id="voice-male" role="radio" aria-checked="false" style="display:none;"
+                        disabled>Hidden</button>
                 </div>
                 <button class="vd-btn--tts" id="tts-btn" aria-label="Read explanation aloud">Read Aloud</button>
                 <span class="vd-tts-status" id="tts-status" aria-live="polite"></span>

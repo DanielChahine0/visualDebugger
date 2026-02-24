@@ -1,5 +1,7 @@
-declare function acquireVsCodeApi(): { postMessage(msg: unknown): void };
-const vscode = acquireVsCodeApi();
+// Make this file a module so TS doesn't consider it a global script
+export { };
+
+declare function acquireVsCodeApi(): { postMessage(msg: unknown): void }; const vscode = acquireVsCodeApi();
 vscode.postMessage({ type: "ready" });
 
 interface DiffData {

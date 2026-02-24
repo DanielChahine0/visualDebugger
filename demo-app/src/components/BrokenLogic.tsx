@@ -13,7 +13,7 @@ export default function StudentRoster() {
     )
   }
 
-   return (
+  return (
     <div className="component-container">
       <h2>Student Roster</h2>
       <p className="description">Class roster for CS 101 — Introduction to Programming.</p>
