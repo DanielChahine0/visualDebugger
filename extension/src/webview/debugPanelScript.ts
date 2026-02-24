@@ -209,6 +209,7 @@ function cleanTextForTTS(html: string): string {
 
 // ── Panel visibility (smooth transitions) ──
 function showPanelSection(name: ViewState): void {
+  if (activeView === name) return;
   activeView = name;
   const ids = ["section-actions", "section-error-explanation", "section-divd-review", "section-tts"];
   const map: Record<ViewState, string> = {
@@ -370,12 +371,24 @@ function updateErrorPanel(data: ErrorData): void {
   // 4. How to Prevent
   const hasPrevent = !!data.howToPrevent;
   showSection("error-section-prevent", hasPrevent);
-  if (hasPrevent) $("prevent-text")!.innerHTML = data.howToPrevent!;
+  if (hasPrevent) {
+    $("prevent-text")!.innerHTML = data.howToPrevent!;
+    const details = $("error-section-prevent")!.querySelector("details");
+    if (details) details.open = true;
+    const hint = $("error-section-prevent")!.querySelector(".vd-disclosure-hint");
+    if (hint) hint.textContent = "Hide tip";
+  }
 
   // 5. Best Practices
   const hasPractices = !!data.bestPractices;
   showSection("error-section-practices", hasPractices);
-  if (hasPractices) $("practices-text")!.innerHTML = data.bestPractices!;
+  if (hasPractices) {
+    $("practices-text")!.innerHTML = data.bestPractices!;
+    const details = $("error-section-practices")!.querySelector("details");
+    if (details) details.open = true;
+    const hint = $("error-section-practices")!.querySelector(".vd-disclosure-hint");
+    if (hint) hint.textContent = "Hide details";
+  }
 
   // 6. Suggested Prompt
   const hasPrompt = !!data.suggestedPrompt;

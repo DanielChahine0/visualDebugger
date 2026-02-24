@@ -270,10 +270,10 @@
             <!-- 4. How to Prevent (progressive disclosure) -->
             <section class="vd-section vd-section--prevent" id="error-section-prevent"
                 aria-labelledby="error-heading-prevent" style="display: none;">
-                <details class="vd-disclosure">
+                <details class="vd-disclosure" open>
                     <summary class="vd-disclosure-trigger" id="error-heading-prevent">
                         <span class="vd-disclosure-title">How to Prevent This</span>
-                        <span class="vd-disclosure-hint" aria-hidden="true">Show tip</span>
+                        <span class="vd-disclosure-hint" aria-hidden="true">Hide tip</span>
                     </summary>
                     <div class="vd-disclosure-body">
                         <p class="vd-body" id="prevent-text"></p>
@@ -284,10 +284,10 @@
             <!-- 5. Best Practices (progressive disclosure) -->
             <section class="vd-section vd-section--practices" id="error-section-practices"
                 aria-labelledby="error-heading-practices" style="display: none;">
-                <details class="vd-disclosure">
+                <details class="vd-disclosure" open>
                     <summary class="vd-disclosure-trigger" id="error-heading-practices">
                         <span class="vd-disclosure-title">Best Practice</span>
-                        <span class="vd-disclosure-hint" aria-hidden="true">Show details</span>
+                        <span class="vd-disclosure-hint" aria-hidden="true">Hide details</span>
                     </summary>
                     <div class="vd-disclosure-body">
                         <p class="vd-body" id="practices-text"></p>
@@ -552,6 +552,8 @@
 
         // ── Panel visibility (smooth transitions) ──
         function showPanelSection(name) {
+            if (activeView === name) return; // Prevent jittery re-animations
+
             var prevView = activeView;
             activeView = name;
             var ids = ['section-actions', 'section-error-explanation', 'section-divd-review', 'section-tts'];
@@ -695,12 +697,24 @@
             // 4. How to Prevent
             var hasPrevent = !!data.howToPrevent;
             showSection('error-section-prevent', hasPrevent);
-            if (hasPrevent) $('prevent-text').innerHTML = data.howToPrevent;
+            if (hasPrevent) {
+                $('prevent-text').innerHTML = data.howToPrevent;
+                var details = $('error-section-prevent').querySelector('details');
+                if (details) details.open = true;
+                var hint = $('error-section-prevent').querySelector('.vd-disclosure-hint');
+                if (hint) hint.textContent = 'Hide tip';
+            }
 
             // 5. Best Practices
             var hasPractices = !!data.bestPractices;
             showSection('error-section-practices', hasPractices);
-            if (hasPractices) $('practices-text').innerHTML = data.bestPractices;
+            if (hasPractices) {
+                $('practices-text').innerHTML = data.bestPractices;
+                var details = $('error-section-practices').querySelector('details');
+                if (details) details.open = true;
+                var hint = $('error-section-practices').querySelector('.vd-disclosure-hint');
+                if (hint) hint.textContent = 'Hide details';
+            }
 
             // 6. Suggested Prompt
             var hasPrompt = !!data.suggestedPrompt;
