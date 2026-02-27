@@ -1,7 +1,7 @@
 {
   "name": "visualdebugger",
   "displayName": "Visual Debugger",
-  "description": "Visual Debugger - explains errors before the fix, reviews AI changes after",
+  "description": "AI-powered bug tutor that explains errors in plain English, reviews AI fixes with visual diffs, and tracks your progress over time.",
   "version": "1.1.0",
   "publisher": "VisualDebugger",
   "icon": "images/icon.png",
@@ -14,7 +14,8 @@
   },
   "categories": [
     "Education",
-    "Debuggers"
+    "Debuggers",
+    "Programming Languages"
   ],
   "activationEvents": [
     "onLanguage:javascript",
@@ -27,7 +28,6 @@
     "onCommand:visualdebugger.showDiffPanel",
     "onCommand:visualdebugger.showDashboard",
     "onCommand:visualdebugger.setGeminiKey",
-    "onCommand:visualdebugger.setElevenLabsKey",
     "onCommand:visualdebugger.setElevenLabsKey",
     "onCommand:visualdebugger.analyzeCurrentFile",
     "onCommand:visualdebugger.explainCodeLensError",
@@ -59,10 +59,6 @@
       {
         "command": "visualdebugger.testGeminiConnection",
         "title": "Visual Debugger: Test Gemini Connection"
-      },
-      {
-        "command": "visualdebugger.setElevenLabsKey",
-        "title": "Visual Debugger: Set ElevenLabs API Key"
       },
       {
         "command": "visualdebugger.setElevenLabsKey",
