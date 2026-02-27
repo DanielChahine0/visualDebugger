@@ -21,17 +21,7 @@
     "onLanguage:javascript",
     "onLanguage:typescript",
     "onLanguage:javascriptreact",
-    "onLanguage:typescriptreact",
-    "onView:visualdebugger.debugPanel",
-    "onView:visualdebugger.dashboardPanel",
-    "onCommand:visualdebugger.showErrorPanel",
-    "onCommand:visualdebugger.showDiffPanel",
-    "onCommand:visualdebugger.showDashboard",
-    "onCommand:visualdebugger.setGeminiKey",
-    "onCommand:visualdebugger.setElevenLabsKey",
-    "onCommand:visualdebugger.analyzeCurrentFile",
-    "onCommand:visualdebugger.explainCodeLensError",
-    "onCommand:visualdebugger.fixCodeLensError"
+    "onLanguage:typescriptreact"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -91,7 +81,7 @@
         {
           "type": "webview",
           "id": "visualdebugger.debugPanel",
-          "name": "Debug"
+          "name": "Error Explanation"
         },
         {
           "type": "webview",

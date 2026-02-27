@@ -46,11 +46,15 @@ After an AI tool modifies your file, the Diff Panel opens automatically:
 After the error is explained, a multiple-choice question tests whether you actually understood the root cause — not just the fix.
 
 ### Bug Dashboard
-A personal analytics panel that tracks your error history over time:
+A full analytics panel that tracks your error history over time. Includes:
 
-- Bar chart of bug categories (Syntax, Logic, Runtime)
-- Trend line across sessions
-- "Focus area" recommendation based on your most common errors
+- **Summary stats** — total bugs with per-category counts (Syntax, Logic, Runtime) that animate on load
+- **Category bar chart** — visual breakdown of your most common bug types
+- **Trend line** — bugs over time with 1H / 1D / 7D / 30D range toggle
+- **Learning progress ring** — tracks how many AI-fix diffs you've reviewed
+- **Activity heatmap** — GitHub-style contribution grid showing your daily bug activity across the last 16 weeks
+- **Achievements** — six unlockable badges (First Bug, 5 Bugs, 10 Bugs, All Types, Quick Fix, Power User)
+- **Recent bug history** — scrollable log of every recorded error with file name, category badge, and timestamp
 
 ### CodeLens Inline Actions
 "Explain This Error" and "Fix Error" links appear directly above red squiggles in your editor — no need to open a panel manually.
